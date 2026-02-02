@@ -15,6 +15,7 @@ const auth_route_1 = __importDefault(require("./routes/auth.route"));
 const mfa_route_1 = __importDefault(require("./routes/mfa.route"));
 const session_route_1 = __importDefault(require("./routes/session.route"));
 const models_route_1 = __importDefault(require("./routes/models.route"));
+const qcreport_route_1 = __importDefault(require("./routes/qcreport.route"));
 const connectDb_1 = require("./lib/connectDb");
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
@@ -36,6 +37,7 @@ app.use("/api/v1/sentinel", auth_route_1.default);
 app.use("/api/v1/sentinel", mfa_route_1.default);
 app.use("/api/v1/sessions", session_route_1.default);
 app.use("/api/v1/models", models_route_1.default);
+app.use("/api/v1/reports", qcreport_route_1.default);
 app.post("/api/v1/get-disagnostics-data", (req, res) => {
     try {
         const body = req.body;

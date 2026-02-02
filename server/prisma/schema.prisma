@@ -470,6 +470,8 @@ model DoorstepPickup {
   user                    User?    @relation(fields: [employeeId], references: [id])
 }
 
+
+// New
 model DiagnosticsData {
   id                        String    @id @default(cuid())
   testId                    String    @unique

@@ -16,6 +16,7 @@ import Session from "./pages/Session";
 import Settings from "./pages/Settings";
 import SearchPage from "./pages/SearchPage";
 import QCReports from "./pages/reports/QCReports";
+import ViewQCReport from "./pages/reports/ViewQCReport";
 
 
 const App = () => {
@@ -46,6 +47,7 @@ const App = () => {
           <Route path="/search" element={<SearchPage />} />
 
           <Route path='/reports/qc-reports' element={<QCReports />} />
+          <Route path='/reports/qc-reports/view/:reportId' element={<ViewQCReport />} />
 
             {/* Add your protected routes here */}
             {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}

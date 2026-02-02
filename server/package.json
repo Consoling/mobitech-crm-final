@@ -14,7 +14,7 @@
   "packageManager": "pnpm@10.25.0",
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0",
+    "@prisma/client": "^7.3.0",
     "@prisma/extension-accelerate": "^3.0.1",
     "@types/cors": "^2.8.19",
     "bcrypt": "^6.0.0",
@@ -45,7 +45,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/speakeasy": "^2.0.10",
     "dotenv": "^17.2.3",
-    "prisma": "^7.2.0",
+    "prisma": "^7.3.0",
     "speakeasy": "^2.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

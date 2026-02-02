@@ -209,6 +209,7 @@ const Session = () => {
         <Button 
           onClick={() => setShowConfirmDialog(true)}
           variant={'destructive'} 
+          disabled={sessions.length === 0 || loading}
           className="rounded-[34px] w-full py-6 transition-all duration-300 ease-in-out hover:bg-red-500/70"
         >
           <LogOut className="mr-2" /> Logout of All Sessions

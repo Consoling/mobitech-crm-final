@@ -11,6 +11,7 @@ import authRoutes from "./routes/auth.route";
 import mfaRoutes from "./routes/mfa.route";
 import sessionRoutes from "./routes/session.route";
 import modelsRoutes from "./routes/models.route";
+import qcReportRoutes from "./routes/qcreport.route";
 import { connectDb } from "./lib/connectDb";
 const app = express();
 app.use(express.json());
@@ -37,6 +38,7 @@ app.use("/api/v1/sentinel", authRoutes);
 app.use("/api/v1/sentinel", mfaRoutes);
 app.use("/api/v1/sessions", sessionRoutes);
 app.use("/api/v1/models", modelsRoutes);
+app.use("/api/v1/reports", qcReportRoutes);
 
 app.post("/api/v1/get-disagnostics-data", (req, res) => {
   try {
