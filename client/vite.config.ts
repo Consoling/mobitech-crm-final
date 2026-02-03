@@ -11,4 +11,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://sentinel.mobitech-crm.in',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 })

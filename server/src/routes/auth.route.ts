@@ -150,11 +150,7 @@ router.post("/verify-wl-totp", async (req: Request, res: Response) => {
       expires: expiresAt,
     };
 
-    console.log("🍪 Setting cookie with options:", cookieOptions);
-    console.log("🍪 Origin:", origin, "| isLocalhost:", isLocalhost);
-    console.log("🍪 Response will include Set-Cookie for session:", session.id);
     res.cookie("mbthcrm_session", session.id, cookieOptions);
-    console.log("✅ Cookie set successfully, session ID:", session.id);
 
     return res.json({
       success: true,
@@ -199,16 +195,8 @@ router.post("/session/update", async (req, res) => {
 
 router.get("/me", async (req: Request, res: Response) => {
   try {
-    console.log("📍 /me - Request headers:", {
-      cookie: req.headers.cookie,
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-    });
     const sessionId = req.cookies?.mbthcrm_session;
-    console.log("📍 /me - Session ID from cookie:", sessionId);
-    console.log("📍 /me - All cookies:", req.cookies);
     if (!sessionId) {
-      console.log("❌ /me - No session cookie found");
       return res.status(401).json({ message: "Not authenticated" });
     }
 
