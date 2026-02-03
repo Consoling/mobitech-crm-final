@@ -32,8 +32,8 @@ router.post("/web-lint", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid phone or password" });
     }
 
-    // const isValidPassword = await compare(password, user.password);
-    const isValidPassword = true
+    const isValidPassword = await compare(password, user.password);
+    // const isValidPassword = true
     if (!isValidPassword) {
       return res.status(400).json({ message: "Invalid phone or password" });
     } else if (!user.mfaEnabled) {

@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const prisma_1 = require("../config/prisma");
+const bcrypt_1 = require("bcrypt");
 const ua_parser_js_1 = require("ua-parser-js");
 const speakeasy_1 = __importDefault(require("speakeasy"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -31,8 +32,8 @@ router.post("/web-lint", async (req, res) => {
         if (!user) {
             return res.status(400).json({ message: "Invalid phone or password" });
         }
-        // const isValidPassword = await compare(password, user.password);
-        const isValidPassword = true;
+        const isValidPassword = await (0, bcrypt_1.compare)(password, user.password);
+        // const isValidPassword = true
         if (!isValidPassword) {
             return res.status(400).json({ message: "Invalid phone or password" });
         }
