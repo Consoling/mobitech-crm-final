@@ -4,6 +4,7 @@ import NotFound from "./pages/NotFound";
 
 import { AnimatePresence } from "framer-motion";
 import ProtectedLayout from "./layout/ProtectedLayout";
+import PublicLayout from "./layout/PublicLayout";
 import TOTPVerify from "./pages/TOTPVerify";
 import WalletBalances from "./pages/WalletBalances";
 import WalletBalance from "./pages/WalletBalance";
@@ -27,9 +28,12 @@ const App = () => {
         <Routes location={location} key={location.pathname}>
           {/* Public Routes */}
           <Route path="/" element={<Navigate to="/login" />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/totp-verify" element={<TOTPVerify />} />
-          <Route path="/mfa-setup" element={<MFASetup />} />
+          
+          <Route element={<PublicLayout />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/totp-verify" element={<TOTPVerify />} />
+            <Route path="/mfa-setup" element={<MFASetup />} />
+          </Route>
 
           {/* Protected Routes */}
           <Route element={<ProtectedLayout />}>
