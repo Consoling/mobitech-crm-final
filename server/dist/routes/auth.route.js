@@ -120,14 +120,18 @@ router.post("/verify-wl-totp", async (req, res) => {
                 device: "Unknown",
             },
         });
+        // Check if request is from localhost
+        const origin = req.headers.origin || '';
+        const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
         const cookieOptions = {
             httpOnly: true,
-            secure: true, // Always true in production (HTTPS)
-            sameSite: "lax", // Use "lax" for same-site, "none" for cross-site
+            secure: !isLocalhost, // Only use secure on production (not localhost)
+            sameSite: isLocalhost ? "lax" : "none", // Use "lax" for localhost, "none" for production
             path: "/",
             expires: expiresAt,
         };
         console.log("🍪 Setting cookie with options:", cookieOptions);
+        console.log("🍪 Origin:", origin, "| isLocalhost:", isLocalhost);
         console.log("🍪 Response will include Set-Cookie for session:", session.id);
         res.cookie("mbthcrm_session", session.id, cookieOptions);
         console.log("✅ Cookie set successfully, session ID:", session.id);
