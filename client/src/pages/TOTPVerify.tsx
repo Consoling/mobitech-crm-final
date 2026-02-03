@@ -82,6 +82,7 @@ const TOTPVerify = () => {
         setAuthenticated({
           id: decoded.userId,
           isAdmin: Boolean(decoded.isAdmin),
+          sessionId: decoded.sessionId,
         });
 
         toast.success("Verified successfully");

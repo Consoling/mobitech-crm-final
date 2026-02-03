@@ -258,7 +258,7 @@ const SettingsSearch = ({ isOpen, onClose, navigationLinks, onNavigate }: Settin
                       {category}
                     </h3>
                   </div>
-                  {links.map((link, linkIndex) => {
+                  {links.map((link) => {
                     const globalIndex = searchResults.length + linkResults.indexOf(link);
                     return (
                       <div

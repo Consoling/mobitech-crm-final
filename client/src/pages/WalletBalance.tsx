@@ -1,4 +1,3 @@
-import React from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Wallet, ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";

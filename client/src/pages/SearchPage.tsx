@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronRight } from "lucide-react";
@@ -48,7 +48,6 @@ const SearchPage = () => {
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const navigate = useNavigate();
-  const inputRef = useState<HTMLInputElement | null>(null)[0];
   
   const debouncedSearch = useDebounce(searchTerm, 300);
   

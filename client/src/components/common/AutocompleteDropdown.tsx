@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Braces, Brackets, Cpu, Smartphone } from "lucide-react";
+import { Braces, Cpu, Smartphone } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 export interface SearchResult {

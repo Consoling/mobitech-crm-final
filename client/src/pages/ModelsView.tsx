@@ -58,7 +58,7 @@ const ModelsView = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [modelToDelete, setModelToDelete] = useState<ModelData | null>(null);
   const [isModelFormOpen, setIsModelFormOpen] = useState<boolean>(false);
-  const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
+  const [_formMode, setFormMode] = useState<'add' | 'edit'>('add');
   const [editingModel, setEditingModel] = useState<ModelData | null>(null);
   const [isSavingModel, setIsSavingModel] = useState<boolean>(false);
 

@@ -8,7 +8,6 @@ import {
   Smartphone,
   User,
   Loader2,
-  CheckCircle2,
   XCircle,
   CircleCheck,
   CircleX,

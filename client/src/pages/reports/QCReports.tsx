@@ -30,7 +30,7 @@ import {
   Loader2,
   CalendarDays,
 } from "lucide-react";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { apiJson, jsonHeaders } from "@/lib/api";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -78,7 +78,7 @@ const QCReports = () => {
   const [reports, setReports] = useState<QCReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [_pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef<HTMLDivElement>(null);

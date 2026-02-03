@@ -1,23 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -28,10 +10,10 @@ import {
 } from "@/components/ui/select";
 import { COMMON_VARIANTS, mobileBrands } from "@/constants/const";
 import { apiFetch } from "@/lib/api";
-import { OctagonAlert, Pen, Plus, Trash, Trash2, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { OctagonAlert, Pen, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 interface FetchedMetadata {
   brandName: string;
@@ -50,7 +32,6 @@ const ModelView = () => {
   const [modelData, setModelData] = useState<any | null>(null);
   const [editedModelData, setEditedModelData] = useState<any | null>(null);
   const [newVariant, setNewVariant] = useState({ name: "", price: "" });
-  const [newModelCode, setNewModelCode] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditingImage, setIsEditingImage] = useState(false);
@@ -103,43 +84,6 @@ const ModelView = () => {
     toast.success("Variant removed (unsaved)");
   };
 
-  const addModelCode = () => {
-    if (!newModelCode.trim()) {
-      toast.error("Please enter a model code");
-      return;
-    }
-
-    const currentModelCodes = editedModelData?.modelCodes || [];
-    
-    if (currentModelCodes.includes(newModelCode.trim())) {
-      toast.error("This model code already exists");
-      return;
-    }
-
-    const updatedModelCodes = [...currentModelCodes, newModelCode.trim()];
-
-    setEditedModelData({
-      ...editedModelData,
-      modelCodes: updatedModelCodes,
-    });
-    setHasChanges(true);
-    toast.success("Model code added (unsaved)");
-    setNewModelCode("");
-  };
-
-  const removeModelCode = (code: string) => {
-    const currentModelCodes = editedModelData?.modelCodes || [];
-    const updatedModelCodes = currentModelCodes.filter(
-      (c: string) => c !== code
-    );
-
-    setEditedModelData({
-      ...editedModelData,
-      modelCodes: updatedModelCodes,
-    });
-    setHasChanges(true);
-    toast.success("Model code removed (unsaved)");
-  };
 
   const updateBasicInfo = (field: string, value: string) => {
     setEditedModelData({

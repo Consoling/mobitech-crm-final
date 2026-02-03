@@ -5,7 +5,6 @@ import {
   LogOut,
   ChevronDown,
   Home,
-  ChevronLeft,
   ChevronRight,
   Smartphone,
   Box,
@@ -19,7 +18,7 @@ import {
   Search,
   Logs,
 } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { logout } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuthStore } from "@/stores/authStore";
@@ -131,7 +130,6 @@ const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
   const toggleMenu = (label: string) => {
     setExpandedMenus((prev) =>
@@ -153,41 +151,6 @@ const Sidebar = () => {
   const isParentActive = (subItems?: { path: string }[]) => {
     if (!subItems) return false;
     return subItems.some((item) => location.pathname === item.path);
-  };
-
-  // Build navigation links for settings search
-  const buildNavigationLinks = () => {
-    const links: { label: string; path: string; category: string }[] = [];
-
-    menuItems.forEach((item) => {
-      if (item.subItems) {
-        item.subItems.forEach((subItem) => {
-          links.push({
-            label: subItem.label,
-            path: subItem.path,
-            category: item.label,
-          });
-        });
-      } else if (item.path) {
-        links.push({
-          label: item.label,
-          path: item.path,
-          category: "Main",
-        });
-      }
-    });
-
-    menu2Items.forEach((item) => {
-      if (item.path) {
-        links.push({
-          label: item.label,
-          path: item.path,
-          category: "Other",
-        });
-      }
-    });
-
-    return links;
   };
 
   const { user } = useAuthStore();
