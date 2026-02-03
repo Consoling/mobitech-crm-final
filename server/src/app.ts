@@ -14,12 +14,15 @@ import modelsRoutes from "./routes/models.route";
 import qcReportRoutes from "./routes/qcreport.route";
 import { connectDb } from "./lib/connectDb";
 const app = express();
+app.set("trust proxy", true);
 app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: SYS_ENV.FRONTEND_URL,
+    origin: SYS_ENV.FRONTEND_URLS,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 app.use(morgan("dev"));

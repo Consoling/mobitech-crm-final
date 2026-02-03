@@ -35,24 +35,36 @@ export const useAuthStore = create<AuthState>()(
         // but validate once in the background.
         set({ isBootstrapping: true });
 
+        console.log("🚀 Bootstrap: Starting with baseUrl:", baseUrl);
+        console.log("🍪 Bootstrap: Document.cookie:", document.cookie);
+
         try {
-          const response = await fetch(`${baseUrl}/sentinel/me`, {
+          const url = `${baseUrl}/sentinel/me`;
+          console.log("🌐 Bootstrap: Fetching:", url);
+          
+          const response = await fetch(url, {
             method: "GET",
             credentials: "include",
           });
 
+          console.log("📡 Bootstrap: Response status:", response.status);
+          console.log("📡 Bootstrap: Response headers:", Object.fromEntries(response.headers.entries()));
+
           if (!response.ok) {
+            console.log("❌ Bootstrap: Not authenticated, clearing state");
             set({ user: null, isAuthenticated: false, isBootstrapping: false });
             return;
           }
 
           const data = await response.json();
+          console.log("✅ Bootstrap: Authenticated, user data:", data);
           set({
             user: { id: data.user.id, isAdmin: data.user.isAdmin, email: data.user.email, sessionId: data.session.id },
             isAuthenticated: true,
             isBootstrapping: false,
           });
-        } catch {
+        } catch (error) {
+          console.error("🔥 Bootstrap: Network error:", error);
           // Network errors: keep whatever we had persisted and stop bootstrapping.
           // API calls will still enforce auth server-side.
           set({ isBootstrapping: false });

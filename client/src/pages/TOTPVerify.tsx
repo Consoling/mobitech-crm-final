@@ -79,7 +79,16 @@ const TOTPVerify = () => {
       if (response.status === 400) {
         toast.error(decoded.message || "Invalid TOTP. Please try again.");
       } else if (response.status === 200) {
+        console.log("✅ TOTP verified successfully, response:", decoded);
+        console.log("🍪 Cookies after TOTP verification:", document.cookie);
+        
         setAuthenticated({
+          id: decoded.userId,
+          isAdmin: Boolean(decoded.isAdmin),
+          sessionId: decoded.sessionId,
+        });
+
+        console.log("📦 User state set:", {
           id: decoded.userId,
           isAdmin: Boolean(decoded.isAdmin),
           sessionId: decoded.sessionId,

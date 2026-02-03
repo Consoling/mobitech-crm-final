@@ -120,13 +120,17 @@ router.post("/verify-wl-totp", async (req, res) => {
                 device: "Unknown",
             },
         });
-        res.cookie("mbthcrm_session", session.id, {
+        const cookieOptions = {
             httpOnly: true,
-            secure: env_1.SYS_ENV.NODE_ENV === "production",
-            sameSite: "lax",
+            secure: true, // Always true in production (HTTPS)
+            sameSite: "lax", // Use "lax" for same-site, "none" for cross-site
             path: "/",
             expires: expiresAt,
-        });
+        };
+        console.log("🍪 Setting cookie with options:", cookieOptions);
+        console.log("🍪 Response will include Set-Cookie for session:", session.id);
+        res.cookie("mbthcrm_session", session.id, cookieOptions);
+        console.log("✅ Cookie set successfully, session ID:", session.id);
         return res.json({
             success: true,
             userId,
@@ -166,8 +170,16 @@ router.post("/session/update", async (req, res) => {
 });
 router.get("/me", async (req, res) => {
     try {
+        console.log("📍 /me - Request headers:", {
+            cookie: req.headers.cookie,
+            origin: req.headers.origin,
+            referer: req.headers.referer,
+        });
         const sessionId = req.cookies?.mbthcrm_session;
+        console.log("📍 /me - Session ID from cookie:", sessionId);
+        console.log("📍 /me - All cookies:", req.cookies);
         if (!sessionId) {
+            console.log("❌ /me - No session cookie found");
             return res.status(401).json({ message: "Not authenticated" });
         }
         const session = await prisma_1.prisma.session.findUnique({

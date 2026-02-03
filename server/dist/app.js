@@ -18,11 +18,14 @@ const models_route_1 = __importDefault(require("./routes/models.route"));
 const qcreport_route_1 = __importDefault(require("./routes/qcreport.route"));
 const connectDb_1 = require("./lib/connectDb");
 const app = (0, express_1.default)();
+app.set("trust proxy", true);
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 app.use((0, cors_1.default)({
-    origin: env_1.SYS_ENV.FRONTEND_URL,
+    origin: env_1.SYS_ENV.FRONTEND_URLS,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use((0, morgan_1.default)("dev"));
 app.use(rateLimiter_1.globalRateLimiter);
