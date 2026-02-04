@@ -18,6 +18,7 @@ import Settings from "./pages/Settings";
 import SearchPage from "./pages/SearchPage";
 import QCReports from "./pages/reports/QCReports";
 import ViewQCReport from "./pages/reports/ViewQCReport";
+import APKDownload from "./pages/APKDownload";
 
 
 const App = () => {
@@ -28,6 +29,7 @@ const App = () => {
         <Routes location={location} key={location.pathname}>
           {/* Public Routes */}
           <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/mdt" element={<APKDownload />} />
           
           <Route element={<PublicLayout />}>
             <Route path="/login" element={<Login />} />
