@@ -22,7 +22,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { logout } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useAuthStore } from "@/stores/authStore";
+
 
 interface MenuItem {
   label: string;
