@@ -17,6 +17,7 @@ import {
   Clock,
   Search,
   Logs,
+  Truck,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { logout } from "@/lib/utils";
@@ -41,6 +42,11 @@ const menuItems: MenuItem[] = [
     label: "Models",
     icon: Smartphone,
     path: "/models",
+  },
+  {
+    label: "Logistics",
+    icon: Truck,
+    path: "/logistics",
   },
   {
     label: "Pickups",
@@ -153,7 +159,7 @@ const Sidebar = () => {
     return subItems.some((item) => location.pathname === item.path);
   };
 
-  const { user } = useAuthStore();
+  
   return (
     <aside
       className={`hidden md:flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-in-out h-screen ${
@@ -209,24 +215,7 @@ const Sidebar = () => {
 
       {/* Scrollable Menu */}
       <div className="flex-1 overflow-y-auto py-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-        {/* User Section */}
-        <div className="px-4 pb-4 mb-4 ">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-linear-to-r from-[#296CFF] to-[#155DFC] flex items-center justify-center shrink-0">
-              <span className="text-white font-semibold text-sm">{user?.email?.split("@")[0].charAt(0).toUpperCase()}</span>
-            </div>
-            {isExpanded && (
-              <div className="flex flex-col overflow-hidden">
-                <span className="font-semibold text-sm text-gray-900 truncate">
-                  {user?.email?.split("@")[0]}
-                </span>
-                <span className="text-xs text-gray-500 truncate">
-                  {user?.email}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
+        
 
         {/* Menu Items */}
         <nav className="space-y-1 px-2">
