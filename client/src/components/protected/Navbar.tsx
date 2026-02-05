@@ -4,10 +4,10 @@ import {
   MessageSquare,
   Bell,
   Menu,
-  X,
+
   ChevronDown,
   ChevronRight,
-  User,
+
   CircleUserRound,
   ChevronLeft,
   Truck,
@@ -15,9 +15,9 @@ import {
 import {
   Popover,
   PopoverContent,
-  PopoverDescription,
+
   PopoverHeader,
-  PopoverTitle,
+
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useLocation, Link, useNavigate } from "react-router-dom";
@@ -127,7 +127,7 @@ const menu2Items: MenuItem[] = [
 ];
 
 const Navbar = () => {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -140,13 +140,7 @@ const Navbar = () => {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const { user } = useAuthStore();
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
 
   // Detect Mac OS
   useEffect(() => {
@@ -205,71 +199,7 @@ const Navbar = () => {
     }
   };
 
-  const formatTime = (date: Date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-
-    const ampm = hours >= 12 ? "PM" : "AM";
-    const formattedHours = hours % 12 || 12;
-    const formattedMinutes = minutes.toString().padStart(2, "0");
-    return `${formattedHours}:${formattedMinutes} ${ampm}`;
-  };
-
-  const formatDate = (date: Date) => {
-    const days = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-
-    const dayName = days[date.getDay()];
-    const monthName = months[date.getMonth()];
-    const dateNum = date.getDate();
-    const year = date.getFullYear();
-
-    return `${dayName}, ${monthName} ${dateNum}, ${year}`;
-  };
-
-  const formatSimpleDate = (date: Date) => {
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const year = date.getFullYear().toString().slice(-2);
-
-    return `${day}/${month}/${year}`;
-  };
-
-  const getPageName = () => {
-    const path = location.pathname;
-    const segments = path.split("/").filter(Boolean);
-
-    if (segments.length === 0) return "Dashboard";
-
-    const pageName = segments[segments.length - 1]
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-
-    return pageName;
-  };
-
+ 
   const toggleMenu = (label: string) => {
     setExpandedMenus((prev) =>
       prev.includes(label)

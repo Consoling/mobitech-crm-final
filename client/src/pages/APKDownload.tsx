@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Download, Smartphone, Undo2, Apple, Wrench, CloudSync } from "lucide-react";
+import {  CloudSync } from "lucide-react";
 import { useState } from "react";
 import {
   AlertDialog,
