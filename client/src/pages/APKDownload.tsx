@@ -39,10 +39,10 @@ const APKDownload = () => {
           {/* Layer 1 - Head */}
 
           <div className="mt-7 flex flex-col items-center ">
-            <span className="text-[#777E90] text-[20px] font-semibold font-poppins">
+            <span className="text-[#777E90] text-[clamp(14px,4vw,20px)] font-semibold font-poppins text-center px-4">
               Mobitech Diagnose Tools.
             </span>
-            <h2 className="text-[#000000] font-bold text-[45px] font-inter">
+            <h2 className="text-[#000000] font-bold text-[clamp(24px,8vw,45px)] font-inter text-center px-4">
               Diagnostics App
             </h2>
           </div>
@@ -109,12 +109,12 @@ const APKDownload = () => {
                 <div className="flex gap-2 sm:gap-4 w-full max-w-md">
                   <Button 
                     onClick={() => downloadApk(false)}
-                    className="flex-1 flex items-center justify-center w-[150px] gap-1.5 sm:gap-2 bg-black hover:bg-gray-800 text-white px-5 py-6 sm:px-6 sm:py-6 shrink-0 rounded-[10px]"
+                    className="flex-1 flex items-center justify-center w-[150px] gap-2 bg-black hover:bg-gray-800 text-white px-5 py-6 sm:px-6 sm:py-6 shrink-0 rounded-[10px]"
                   >
                     <img
-                      src="/android-logo.svg"
+                      src="/android-logo.png"
                       alt="Android"
-                      className=" h-6 "
+                      className=" h-3.5 "
                     />
                     <div className="flex ">
                    
@@ -137,12 +137,12 @@ const APKDownload = () => {
 
                 <Button 
                   onClick={() => downloadApk(true)}
-                  className="flex items-center gap-2 bg-[#296CFF] hover:bg-[#1E4ED8] text-white px-4 py-6 sm:px-6  rounded-lg shrink-0"
+                  className="flex items-center gap-2.5 bg-[#296CFF] hover:bg-[#1E4ED8] text-white px-4 py-6 sm:px-6  rounded-lg shrink-0"
                 >
                   <img
-                      src="/android-logo.svg"
+                      src="/android-logo.png"
                       alt="iOS"
-                      className=" h-6 "
+                      className=" h-3.5 "
                     />
                   <div className="flex flex-col items-start">
                     <span className="text-xs sm:text-sm font-semibold">OLDER VERSION APK</span>
