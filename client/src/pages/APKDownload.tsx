@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {  CloudSync } from "lucide-react";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +14,12 @@ import {
 
 const APKDownload = () => {
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadType, setDownloadType] = useState<'regular' | 'bc' | null>(null);
+  
   const downloadApk = (isBC: boolean) => {
+    setIsDownloading(true);
+    setDownloadType(isBC ? 'bc' : 'regular');
     const fileName = isBC
       ? "Mobitech_Diagnose_2.2.10(BC).apk"
       : "Mobitech_Diagnose_2.2.10.apk";
@@ -23,6 +29,11 @@ const APKDownload = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
+    setTimeout(() => {
+      setIsDownloading(false);
+      setDownloadType(null);
+    }, 3500);
   };
 
   return (
@@ -109,44 +120,74 @@ const APKDownload = () => {
                 <div className="flex gap-2 sm:gap-4 w-full max-w-md">
                   <Button 
                     onClick={() => downloadApk(false)}
-                    className="flex-1 flex items-center justify-center w-[150px] gap-2 bg-black hover:bg-gray-800 text-white px-5 py-6 sm:px-6 sm:py-6 shrink-0 rounded-[10px]"
+                    className="flex-1 flex items-center justify-center gap-2 bg-black hover:bg-gray-800 text-white px-5 py-6 sm:px-6 sm:py-6 shrink-0 rounded-[10px] relative overflow-hidden"
                   >
+                    <AnimatePresence>
+                      {isDownloading && downloadType === 'regular' && (
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                          initial={{ x: '-100%' }}
+                          animate={{ x: '200%' }}
+                          exit={{ opacity: 0 }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: 2,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      )}
+                    </AnimatePresence>
                     <img
                       src="/android-logo.png"
                       alt="Android"
-                      className=" h-3.5 "
+                      className="h-3.5 relative z-10"
                     />
-                    <div className="flex ">
-                   
+                    <div className="flex relative z-10">
                       <span className="text-sm sm:text-lg font-semibold uppercase">Android</span>
                     </div>
                   </Button>
                   
-                  <Button                     onClick={() => setShowComingSoon(true)}                    className="flex-1 flex items-center justify-center w-[150px] gap-1.5 sm:gap-2 bg-black hover:bg-gray-800 text-white px-5 py-6 sm:px-6 sm:py-6 shrink-0 rounded-[10px]"
+                  <Button
+                    onClick={() => setShowComingSoon(true)}
+                    className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-black hover:bg-gray-800 text-white px-5 py-6 sm:px-6 sm:py-6 shrink-0 rounded-[10px]"
                   >
                     <img
                       src="/ios-logo.png"
                       alt="iOS"
-                      className=" h-6 "
+                      className="h-6"
                     />
-                    <div className="flex ">
-                      <span className="text-sm sm:text-lg font-semibold ">iOS</span>
+                    <div className="flex">
+                      <span className="text-sm sm:text-lg font-semibold">iOS</span>
                     </div>
                   </Button>
                 </div>
 
                 <Button 
                   onClick={() => downloadApk(true)}
-                  className="flex items-center gap-2.5 bg-[#296CFF] hover:bg-[#1E4ED8] text-white px-4 py-6 sm:px-6  rounded-lg shrink-0"
+                  className="flex items-center gap-2.5 bg-[#296CFF] hover:bg-[#1E4ED8] text-white px-4 py-6 sm:px-6 rounded-lg shrink-0 relative overflow-hidden"
                 >
+                  <AnimatePresence>
+                    {isDownloading && downloadType === 'bc' && (
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                        initial={{ x: '-100%' }}
+                        animate={{ x: '200%' }}
+                        exit={{ opacity: 0 }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: 2,
+                          ease: "easeInOut",
+                        }}
+                      />
+                    )}
+                  </AnimatePresence>
                   <img
-                      src="/android-logo.png"
-                      alt="iOS"
-                      className=" h-3.5 "
-                    />
-                  <div className="flex flex-col items-start">
+                    src="/android-logo.png"
+                    alt="Android"
+                    className="h-3.5 relative z-10"
+                  />
+                  <div className="flex flex-col items-start relative z-10">
                     <span className="text-xs sm:text-sm font-semibold">OLDER VERSION APK</span>
-                    
                   </div>
                 </Button>
               </div>
