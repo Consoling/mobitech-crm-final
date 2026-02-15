@@ -72,7 +72,7 @@ const APKDownload = () => {
                 <img
                   src="/google-play-logo.png"
                   alt="Google Play"
-                  className="play-store-logo"
+                  className="apk-store-logo"
                 />
                 <div className="apk-store-button-content">
                   <span className="apk-store-button-small-text">GET IT ON</span>
