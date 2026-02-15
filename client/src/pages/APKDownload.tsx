@@ -72,7 +72,7 @@ const APKDownload = () => {
                 <img
                   src="/google-play-logo.png"
                   alt="Google Play"
-                  className="apk-store-logo"
+                  className="play-store-logo"
                 />
                 <div className="apk-store-button-content">
                   <span className="apk-store-button-small-text">GET IT ON</span>
@@ -118,6 +118,21 @@ const APKDownload = () => {
             </span>
               <div className="apk-download-buttons">
                 <div className="apk-download-buttons-row">
+                 
+                 <button
+                    onClick={() => setShowComingSoon(true)}
+                    className="apk-download-button"
+                  >
+                    <img
+                      src="/ios-logo.png"
+                      alt="iOS"
+                      className="apk-ios-logo"
+                    />
+                    <div className="apk-download-button-content">
+                      <span className="apk-download-button-text">iOS</span>
+                    </div>
+                  </button>
+                 
                   <button 
                     onClick={() => downloadApk(false)}
                     className="apk-download-button"
@@ -147,19 +162,7 @@ const APKDownload = () => {
                     </div>
                   </button>
                   
-                  <button
-                    onClick={() => setShowComingSoon(true)}
-                    className="apk-download-button"
-                  >
-                    <img
-                      src="/ios-logo.png"
-                      alt="iOS"
-                      className="apk-ios-logo"
-                    />
-                    <div className="apk-download-button-content">
-                      <span className="apk-download-button-text">iOS</span>
-                    </div>
-                  </button>
+                  
                 </div>
 
                 <button 
