@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const prisma_1 = require("../config/prisma");
+const prisma_1 = require("../../config/prisma");
 const otplib_1 = require("otplib");
 const qrcode_1 = __importDefault(require("qrcode"));
 const router = express_1.default.Router();
@@ -36,7 +36,7 @@ router.post("/mfa/setup", async (req, res) => {
             where: { id: userId },
             data: { mfaSecret, mfaVerified: false },
         });
-        return res.status(200).json({ qrCodeDataUrl });
+        return res.status(200).json({ qrCodeDataUrl, secret: mfaSecret });
     }
     catch (error) {
         console.error("MFA setup error:", error);

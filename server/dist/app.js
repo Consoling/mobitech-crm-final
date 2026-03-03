@@ -18,6 +18,8 @@ const models_route_1 = __importDefault(require("./routes/models.route"));
 const qcreport_route_1 = __importDefault(require("./routes/qcreport.route"));
 const ocr_route_1 = __importDefault(require("./routes/ocr.route"));
 const device_data_route_1 = __importDefault(require("./routes/device-data.route"));
+const auth_route_2 = __importDefault(require("./routes/diagnose_routes/auth.route"));
+const mfa_route_2 = __importDefault(require("./routes/diagnose_routes/mfa.route"));
 const connectDb_1 = require("./lib/connectDb");
 const app = (0, express_1.default)();
 app.set("trust proxy", true);
@@ -45,6 +47,8 @@ app.use("/api/v1/models", models_route_1.default);
 app.use("/api/v1/reports", qcreport_route_1.default);
 app.use("/api/v2/ocr", ocr_route_1.default);
 app.use("/api/v2/device-data", device_data_route_1.default);
+app.use(`/api/v1/diagnose`, auth_route_2.default);
+app.use(`/api/v1/diagnose`, mfa_route_2.default);
 app.post("/api/v1/get-disagnostics-data", (req, res) => {
     try {
         const body = req.body;

@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { prisma } from "../config/prisma";
+import { prisma } from "../../config/prisma";
 import { generateSecret, generateURI, verify } from "otplib";
 import QRCode from "qrcode";
 const router = express.Router();
@@ -38,7 +38,7 @@ router.post("/mfa/setup", async (req: Request, res: Response) => {
       data: { mfaSecret, mfaVerified: false },
     });
 
-    return res.status(200).json({ qrCodeDataUrl });
+    return res.status(200).json({ qrCodeDataUrl , secret: mfaSecret});
   } catch (error: any) {
     console.error("MFA setup error:", error);
     res

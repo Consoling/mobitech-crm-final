@@ -14,6 +14,8 @@ import modelsRoutes from "./routes/models.route";
 import qcReportRoutes from "./routes/qcreport.route";
 import ocrRoutes from "./routes/ocr.route";
 import deviceDataRoute from "./routes/device-data.route";
+import diagnoseAuthRoutes from "./routes/diagnose_routes/auth.route";
+import mfaDiagnoseRoutes from "./routes/diagnose_routes/mfa.route";
 import { connectDb } from "./lib/connectDb";
 const app = express();
 app.set("trust proxy", true);
@@ -46,6 +48,9 @@ app.use("/api/v1/models", modelsRoutes);
 app.use("/api/v1/reports", qcReportRoutes);
 app.use("/api/v2/ocr", ocrRoutes);
 app.use("/api/v2/device-data", deviceDataRoute);
+
+app.use(`/api/v1/diagnose`, diagnoseAuthRoutes);
+app.use(`/api/v1/diagnose`, mfaDiagnoseRoutes);
 app.post("/api/v1/get-disagnostics-data", (req, res) => {
   try {
     const body = req.body;

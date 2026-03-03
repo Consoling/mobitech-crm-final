@@ -4,20 +4,52 @@ import multer from "multer";
 import sharp from "sharp";
 import { isValidIMEI } from "../utils/imei-validator";
 
+import {
+  MultiFormatReader,
+  RGBLuminanceSource,
+  HybridBinarizer,
+  BinaryBitmap,
+} from "@zxing/library";
+
 const router = express.Router();
 
+// MULTER
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image files allowed"));
-    }
+    if (!file.mimetype.startsWith("image/")) return cb(new Error("Only images allowed"));
     cb(null, true);
   },
 });
 
-// 🚀 Accept up to 2 images at once
+// DETECT DARK UI
+const isDarkImage = async (buffer: Buffer) => {
+  const stats = await sharp(buffer).stats();
+  return stats.channels[0].mean < 80;
+};
+
+// BARCODE EXTRACTOR
+async function extractBarcodeIMEI(buffer: Buffer): Promise<string[]> {
+  try {
+    const { data, info } = await sharp(buffer)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const luminance = new RGBLuminanceSource(new Uint8ClampedArray(data), info.width, info.height);
+    const bitmap = new BinaryBitmap(new HybridBinarizer(luminance));
+    const reader = new MultiFormatReader();
+
+    const result = reader.decode(bitmap);
+    const txt = result.getText().trim();
+
+    return txt.match(/\d{15}/g) || [];
+  } catch (err) {
+    return [];
+  }
+}
+
 router.post(
   "/ocr-extract",
   upload.array("images", 2),
@@ -25,61 +57,95 @@ router.post(
     try {
       const files = req.files as Express.Multer.File[];
 
-      if (!files || files.length === 0) {
+      if (!files?.length) {
         return res.status(400).json({ success: false, message: "No images uploaded" });
       }
 
-      const allExtracted: string[] = [];
+      const allExtracted = new Set<string>();
+      let incompleteView = false;
 
-      // 🧠 Process each image separately
       for (const file of files) {
-        const buffer = file.buffer;
+        const original = file.buffer;
+        const metadata = await sharp(original).metadata();
+        const dark = await isDarkImage(original);
 
-        const processed = await sharp(buffer)
-          .grayscale()
-          .normalize()
-          .sharpen()
-          .resize({ width: 1600 })
+        // Crop IMEI text area
+        const cropped = await sharp(original)
+          .extract({
+            top: 0,
+            left: 0,
+            width: metadata.width!,
+            height: Math.floor(metadata.height! * 0.45),
+          })
           .toBuffer();
 
-        const result = await Tesseract.recognize(processed, "eng", {
+        // OCR PREPROCESS
+        const processed = dark
+          ? await sharp(cropped)
+              .resize({ width: 2200 })
+              .modulate({ brightness: 1.8 })
+              .linear(1.9, -(128 * 0.9))
+              .gamma(1.3)
+              .grayscale()
+              .sharpen()
+              .threshold(155)
+              .toBuffer()
+          : await sharp(cropped)
+              .resize({ width: 1600 })
+              .grayscale()
+              .normalize()
+              .sharpen()
+              .toBuffer();
+
+        // OCR
+        const ocr = await Tesseract.recognize(processed, "eng", {
           tessedit_char_whitelist: "0123456789IME/",
-          tessedit_pageseg_mode: 6,
         } as any);
 
-        let rawText = result.data.text;
-        console.log("OCR RESULT:", rawText);
+        let text = ocr.data.text;
+        console.log("OCR:", text);
 
-        // Remove "/ 11" type software version
-        rawText = rawText.replace(/\/\s*\d{2}/g, "");
+        const hasIMEI2Label = text.toLowerCase().includes("imei2") || text.includes("IMEI 2");
 
-        // Match any 15-digit IMEI
-        const imeiRegex = /(\d{15})(?=\D|$)/g;
-        let match;
+        // Remove /01 /18
+        text = text.replace(/\/\s*\d{2}/g, "");
 
-        while ((match = imeiRegex.exec(rawText)) !== null) {
-          const imei = match[1];
-          if (isValidIMEI(imei) && !allExtracted.includes(imei)) {
-            allExtracted.push(imei);
-          }
+        // Extract IMEI via OCR
+        const ocrMatches = text.match(/\d{15}/g) || [];
+        for (const imei of ocrMatches) {
+          if (isValidIMEI(imei)) allExtracted.add(imei);
+        }
+
+        if (hasIMEI2Label && ocrMatches.length === 0) {
+          incompleteView = true;
+        }
+
+        // BARCODE FALLBACK
+        const barcodeMatches = await extractBarcodeIMEI(original);
+
+        console.log("BARCODE:", barcodeMatches);
+        for (const imei of barcodeMatches) {
+          if (isValidIMEI(imei)) allExtracted.add(imei);
         }
       }
 
-      // Deduplicate
-      const unique = [...new Set(allExtracted)];
-
-      const imei1 = unique[0] || null;
-      const imei2 = unique[1] || null;
+      const arr = [...allExtracted];
+      const imei1 = arr[0] || null;
+      const imei2 = arr[1] || null;
 
       let status = "NOT_FOUND";
-      let message = "No IMEI detected";
+      let message = "IMEI not detected.";
 
-      if (imei1 && imei2) {
+      if (incompleteView && arr.length === 0) {
+        status = "INCOMPLETE_VIEW";
+        message =
+          "IMEI label detected but number hidden. Please scroll or include full IMEI block.";
+      } else if (imei1 && imei2) {
         status = "COMPLETE";
-        message = "Both IMEI numbers detected successfully.";
+        message = "Both IMEIs extracted successfully.";
       } else if (imei1) {
         status = "PARTIAL";
-        message = "Only one IMEI detected. Upload both screenshots if needed.";
+        message = "Only one IMEI found. Upload the second screenshot.";
       }
 
       return res.json({
@@ -88,9 +154,8 @@ router.post(
         message,
         data: { imei1, imei2 },
       });
-
-    } catch (error) {
-      console.error("OCR ERROR:", error);
+    } catch (err) {
+      console.error("OCR ERROR:", err);
       return res.status(500).json({ success: false, message: "Internal server error" });
     }
   }
