@@ -8,7 +8,10 @@ const router = express.Router();
 router.post(`/login`, async (req: Request, res: Response) => {
   try {
     const { employeeIdRaw } = req.body;
-
+return res.status(500).json({
+      success: false,
+      error: "Login is currently disabled for testing purposes",
+    });
     if (!employeeIdRaw) {
       return res.status(400).json({
         success: false,
@@ -16,64 +19,64 @@ router.post(`/login`, async (req: Request, res: Response) => {
       });
     }
 
-    let employeeId = `MT${employeeIdRaw}`;
+    // let employeeId = `MT${employeeIdRaw}`;
 
-    // Query all role tables in parallel
-    const [admin, manager, technician, fieldExec, salesExec] =
-      await Promise.all([
-        prisma.admin.findUnique({
-          where: { employeeId },
-          select: { firstName: true, lastName: true, userId: true },
-        }),
-        prisma.manager.findUnique({
-          where: { employeeId },
-          select: { firstName: true, lastName: true, userId: true },
-        }),
-        prisma.technician.findUnique({
-          where: { employeeId },
-          select: { firstName: true, lastName: true, userId: true },
-        }),
-        prisma.fieldExecutive.findUnique({
-          where: { employeeId },
-          select: { firstName: true, lastName: true, userId: true },
-        }),
-        prisma.salesExecutive.findUnique({
-          where: { employeeId },
-          select: { firstName: true, lastName: true, userId: true },
-        }),
-      ]);
+    // // Query all role tables in parallel
+    // const [admin, manager, technician, fieldExec, salesExec] =
+    //   await Promise.all([
+    //     prisma.admin.findUnique({
+    //       where: { employeeId },
+    //       select: { firstName: true, lastName: true, userId: true },
+    //     }),
+    //     prisma.manager.findUnique({
+    //       where: { employeeId },
+    //       select: { firstName: true, lastName: true, userId: true },
+    //     }),
+    //     prisma.technician.findUnique({
+    //       where: { employeeId },
+    //       select: { firstName: true, lastName: true, userId: true },
+    //     }),
+    //     prisma.fieldExecutive.findUnique({
+    //       where: { employeeId },
+    //       select: { firstName: true, lastName: true, userId: true },
+    //     }),
+    //     prisma.salesExecutive.findUnique({
+    //       where: { employeeId },
+    //       select: { firstName: true, lastName: true, userId: true },
+    //     }),
+    //   ]);
 
-    // Find the first non-null result
-    const employee = admin || manager || technician || fieldExec || salesExec;
+    // // Find the first non-null result
+    // const employee = admin || manager || technician || fieldExec || salesExec;
 
-    if (!employee) {
-      return res.status(404).json({
-        success: false,
-        error: "Employee not found",
-      });
-    }
+    // if (!employee) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     error: "Employee not found",
+    //   });
+    // }
 
-    const isMfaEnabled = await prisma.user.findUnique({
-      where: { id: employee.userId },
-      select: { mfaEnabled: true },
-    });
+    // const isMfaEnabled = await prisma.user.findUnique({
+    //   where: { id: employee.userId },
+    //   select: { mfaEnabled: true },
+    // });
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        userId: employee.userId,
-        isMfaEnabled: isMfaEnabled?.mfaEnabled || false,
-      },
-      metaData: {
-        type: "mobile",
-        intent: "diagnosis",
-        stage: "partial_auth",
-        timestamp: new Date().toISOString(),
+    // return res.status(200).json({
+    //   success: true,
+    //   data: {
+    //     firstName: employee.firstName,
+    //     lastName: employee.lastName,
+    //     userId: employee.userId,
+    //     isMfaEnabled: isMfaEnabled?.mfaEnabled || false,
+    //   },
+    //   metaData: {
+    //     type: "mobile",
+    //     intent: "diagnosis",
+    //     stage: "partial_auth",
+    //     timestamp: new Date().toISOString(),
 
-      }
-    });
+    //   }
+    // });
   } catch (error) {
     console.error("Error during login:", error);
     return res.status(500).json({
