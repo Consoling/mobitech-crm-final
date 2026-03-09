@@ -16,6 +16,9 @@ import ocrRoutes from "./routes/ocr.route";
 import deviceDataRoute from "./routes/device-data.route";
 import diagnoseAuthRoutes from "./routes/diagnose_routes/auth.route";
 import mfaDiagnoseRoutes from "./routes/diagnose_routes/mfa.route";
+import verifySelfieRoutes from "./routes/diagnose_routes/verify-selfie.route";
+import getDeviceFromModelCodeRoute from "./routes/diagnose_routes/device-data.route";
+import uploadDiagDataRoute from "./routes/diagnose_routes/upload-diag-data.route";
 import { connectDb } from "./lib/connectDb";
 const app = express();
 app.set("trust proxy", true);
@@ -51,7 +54,10 @@ app.use("/api/v2/device-data", deviceDataRoute);
 
 app.use(`/api/v1/diagnose`, diagnoseAuthRoutes);
 app.use(`/api/v1/diagnose`, mfaDiagnoseRoutes);
-app.post("/api/v1/get-disagnostics-data", (req, res) => {
+app.use(`/api/v1/diagnose`, verifySelfieRoutes);
+app.use(`/api/v1/diagnose`, getDeviceFromModelCodeRoute);
+app.use(`/api/v1/diagnose`, uploadDiagDataRoute);
+app.post("/api/v1/get-diagnostics-data", (req, res) => {
   try {
     const body = req.body;
     console.log(body);
