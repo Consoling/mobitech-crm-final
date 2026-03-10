@@ -52,6 +52,16 @@ router.post(`/login`, async (req, res) => {
             where: { id: employee.userId },
             select: { mfaEnabled: true },
         });
+        const isActive = await prisma_1.prisma.user.findUnique({
+            where: { id: employee.userId },
+            select: { status: true },
+        });
+        if (!isActive || isActive.status !== "ACTIVE") {
+            return res.status(403).json({
+                success: false,
+                error: "User account is not active",
+            });
+        }
         return res.status(200).json({
             success: true,
             data: {
