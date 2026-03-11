@@ -22,7 +22,7 @@ const APKDownload = () => {
     setDownloadType(isBC ? 'bc' : 'regular');
     const fileName = isBC
       ? "Mobitech_Diagnose_2.2.10(BC).apk"
-      : "Mobitech_Diagnose_2.2.10.apk";
+      : "Mobitech_Diagnose_3.0.0.apk";
     const link = document.createElement("a");
     link.href = `/apk/${fileName}`;
     link.download = fileName;
@@ -165,34 +165,7 @@ const APKDownload = () => {
                   
                 </div>
 
-                <button 
-                  onClick={() => downloadApk(true)}
-                  className="apk-older-button"
-                >
-                  <AnimatePresence>
-                    {isDownloading && downloadType === 'bc' && (
-                      <motion.div
-                        className="apk-shimmer"
-                        initial={{ x: '-100%' }}
-                        animate={{ x: '200%' }}
-                        exit={{ opacity: 0 }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: 2,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    )}
-                  </AnimatePresence>
-                  <img
-                    src="/android-logo.png"
-                    alt="Android"
-                    className="apk-android-logo"
-                  />
-                  <div className="apk-older-button-content">
-                    <span className="apk-older-button-text">OLDER VERSION APK</span>
-                  </div>
-                </button>
+                
               </div>
             </div>
           </div>
