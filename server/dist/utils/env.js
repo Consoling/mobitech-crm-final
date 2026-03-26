@@ -15,4 +15,6 @@ exports.SYS_ENV = {
     DATABASE_URL: process.env.DATABASE_URL,
     FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:5173",
     FRONTEND_URLS: process.env.FRONTEND_URLS?.split(',').map(url => url.trim()) || ["http://localhost:5173"],
+    IMEI_CHECK_API_KEY: process.env.IMEI_CHECK_API_KEY,
+    IMEI_CHECK_SERVICE: process.env.IMEI_CHECK_SERVICE || "11",
 };
