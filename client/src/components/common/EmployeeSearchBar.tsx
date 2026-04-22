@@ -1,5 +1,5 @@
 import { Plus, Search } from "lucide-react";
-import React, { useRef, useState } from "react";
+import React, { useRef} from "react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
@@ -29,7 +29,7 @@ const EmployeeSearchBar = ({
   showFilter = true,
   ...props
 }: EmployeeSearchBarProps) => {
-  const [showDropdown, setShowDropdown] = useState(false);
+  // const [showDropdown, setShowDropdown] = useState(false);
   const empWrapperRef = useRef<HTMLDivElement>(null);
   const employeeInputRef = useRef<HTMLInputElement>(null);
   return (
@@ -44,9 +44,7 @@ const EmployeeSearchBar = ({
           value={props.value}
           onChange={(e) => {
             props.onValueChange(e.target.value);
-            if (enableAutocomplete && e.target.value.length >= 2) {
-              setShowDropdown(true);
-            }
+            
           }}
         />
       </div>

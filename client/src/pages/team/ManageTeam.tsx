@@ -2,12 +2,7 @@ import EmployeeSearchBar from "@/components/common/EmployeeSearchBar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import employeeData from "./components/data.json";
-import {
-  Download,
-  Calendar as CircleCheckBig,
-  UsersRound,
-  Check,
-} from "lucide-react";
+import { Download, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { EmployeeDataTable } from "./components/data-table.";
 
