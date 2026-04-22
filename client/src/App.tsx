@@ -20,6 +20,8 @@ import QCReports from "./pages/reports/QCReports";
 import ViewQCReport from "./pages/reports/ViewQCReport";
 import APKDownload from "./pages/APKDownload";
 
+import ManageTeam from './pages/team/ManageTeam'
+
 
 const App = () => {
   const location = useLocation();
@@ -54,6 +56,8 @@ const App = () => {
 
           <Route path='/reports/qc-reports' element={<QCReports />} />
           <Route path='/reports/qc-reports/view/:reportId' element={<ViewQCReport />} />
+
+          <Route path='/manage-team/employees' element={<ManageTeam />} />
 
             {/* Add your protected routes here */}
             {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}

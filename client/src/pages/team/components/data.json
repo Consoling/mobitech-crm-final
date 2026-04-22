@@ -1,0 +1,171 @@
+{
+  "employees": [
+    {
+      "id": 1,
+      "view": "View",
+      "name": "Aarav Sharma",
+      "email": "aarav.sharma@mobitech.com",
+      "employeeId": "EMP-1001",
+      "phone": "+91 98765 43210",
+      "createdAt": "2026-04-01T09:30:00Z",
+      "role": "Admin",
+      "status": "Active"
+    },
+    {
+      "id": 2,
+      "view": "View",
+      "name": "Neha Gupta",
+      "email": "neha.gupta@mobitech.com",
+      "employeeId": "EMP-1002",
+      "phone": "+91 97654 32109",
+      "createdAt": "2026-03-28T10:15:00Z",
+      "role": "Store Manager",
+      "status": "Active"
+    },
+    {
+      "id": 3,
+      "view": "View",
+      "name": "Rohan Verma",
+      "email": "rohan.verma@mobitech.com",
+      "employeeId": "EMP-1003",
+      "phone": "+91 96543 21098",
+      "createdAt": "2026-03-21T08:45:00Z",
+      "role": "Sales Agent",
+      "status": "Inactive"
+    },
+    {
+      "id": 4,
+      "view": "View",
+      "name": "Priya Nair",
+      "email": "priya.nair@mobitech.com",
+      "employeeId": "EMP-1004",
+      "phone": "+91 95432 10987",
+      "createdAt": "2026-03-18T11:20:00Z",
+      "role": "Technician",
+      "status": "Active"
+    },
+    {
+      "id": 5,
+      "view": "View",
+      "name": "Karan Mehta",
+      "email": "karan.mehta@mobitech.com",
+      "employeeId": "EMP-1005",
+      "phone": "+91 94321 09876",
+      "createdAt": "2026-03-12T07:55:00Z",
+      "role": "Field Executive",
+      "status": "Active"
+    },
+    {
+      "id": 6,
+      "view": "View",
+      "name": "Isha Kapoor",
+      "email": "isha.kapoor@mobitech.com",
+      "employeeId": "EMP-1006",
+      "phone": "+91 93210 98765",
+      "createdAt": "2026-03-07T12:10:00Z",
+      "role": "Exchange Partner",
+      "status": "Inactive"
+    },
+    {
+      "id": 7,
+      "view": "View",
+      "name": "Vikram Singh",
+      "email": "vikram.singh@mobitech.com",
+      "employeeId": "EMP-1007",
+      "phone": "+91 92109 87654",
+      "createdAt": "2026-03-03T09:05:00Z",
+      "role": "Admin",
+      "status": "Active"
+    },
+    {
+      "id": 8,
+      "view": "View",
+      "name": "Meera Joshi",
+      "email": "meera.joshi@mobitech.com",
+      "employeeId": "EMP-1008",
+      "phone": "+91 91098 76543",
+      "createdAt": "2026-02-27T14:25:00Z",
+      "role": "Sales Agent",
+      "status": "Active"
+    },
+    {
+      "id": 9,
+      "view": "View",
+      "name": "Aditya Rao",
+      "email": "aditya.rao@mobitech.com",
+      "employeeId": "EMP-1009",
+      "phone": "+91 90987 65432",
+      "createdAt": "2026-02-20T16:40:00Z",
+      "role": "Technician",
+      "status": "Inactive"
+    },
+    {
+      "id": 10,
+      "view": "View",
+      "name": "Sneha Iyer",
+      "email": "sneha.iyer@mobitech.com",
+      "employeeId": "EMP-1010",
+      "phone": "+91 99876 54321",
+      "createdAt": "2026-02-15T13:35:00Z",
+      "role": "Field Executive",
+      "status": "Active"
+    }
+  ],
+  "stores": [
+    {
+      "id": 101,
+      "view": "View",
+      "ownerName": "Arjun Mehta",
+      "storeId": "STR-2001",
+      "storeName": "Mobitech Downtown",
+      "ownerPhone": "+91 90011 22334",
+      "address": "12 MG Road, Bengaluru",
+      "createdAt": "2026-04-12T09:32:00Z",
+      "status": "Active"
+    },
+    {
+      "id": 102,
+      "view": "View",
+      "ownerName": "Sana Khan",
+      "storeId": "STR-2002",
+      "storeName": "Mobitech Central",
+      "ownerPhone": "+91 90022 33445",
+      "address": "44 Park Street, Kolkata",
+      "createdAt": "2026-04-08T11:10:00Z",
+      "status": "Active"
+    },
+    {
+      "id": 103,
+      "view": "View",
+      "ownerName": "Rahul Bose",
+      "storeId": "STR-2003",
+      "storeName": "Mobitech Express",
+      "ownerPhone": "+91 90033 44556",
+      "address": "88 Sector 18, Noida",
+      "createdAt": "2026-04-04T15:45:00Z",
+      "status": "Inactive"
+    },
+    {
+      "id": 104,
+      "view": "View",
+      "ownerName": "Nisha Verma",
+      "storeId": "STR-2004",
+      "storeName": "Mobitech Prime",
+      "ownerPhone": "+91 90044 55667",
+      "address": "21 FC Road, Pune",
+      "createdAt": "2026-03-29T10:20:00Z",
+      "status": "Active"
+    },
+    {
+      "id": 105,
+      "view": "View",
+      "ownerName": "Sameer Ali",
+      "storeId": "STR-2005",
+      "storeName": "Mobitech Hub",
+      "ownerPhone": "+91 90055 66778",
+      "address": "7 Banjara Hills, Hyderabad",
+      "createdAt": "2026-03-23T13:05:00Z",
+      "status": "Active"
+    }
+  ]
+}
