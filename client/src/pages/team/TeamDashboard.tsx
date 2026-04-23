@@ -66,7 +66,7 @@ type TeamTableData = {
   }>;
 };
 
-const ManageTeam = () => {
+const TeamDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [teamTableData, setTeamTableData] = useState<TeamTableData>({
     employees: [],
@@ -195,7 +195,7 @@ const ManageTeam = () => {
       <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <Card className="h-26.25 rounded-[16px] bg-[#FFFFFF] border border-[#E2E8F0] drop-shadow-md p-4 flex justify-center items-center">
           <div className="w-full flex gap-5">
-            <div className="w-[48px] h-[48px] rounded-full bg-[#DCFCE7] text-[#00A63E] flex justify-center items-center">
+            <div className="w-12 h-12 rounded-full bg-[#DCFCE7] text-[#00A63E] flex justify-center items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -322,4 +322,4 @@ const ManageTeam = () => {
   );
 };
 
-export default ManageTeam;
+export default TeamDashboard;

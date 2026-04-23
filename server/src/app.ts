@@ -19,6 +19,7 @@ import mfaDiagnoseRoutes from "./routes/diagnose_routes/mfa.route";
 import verifySelfieRoutes from "./routes/diagnose_routes/verify-selfie.route";
 import getDeviceFromModelCodeRoute from "./routes/diagnose_routes/device-data.route";
 import uploadDiagDataRoute from "./routes/diagnose_routes/upload-diag-data.route";
+import teamRoutes from "./routes/team.route";
 import { connectDb } from "./lib/connectDb";
 const app = express();
 app.set("trust proxy", true);
@@ -49,6 +50,7 @@ app.use("/api/v1/sentinel", mfaRoutes);
 app.use("/api/v1/sessions", sessionRoutes);
 app.use("/api/v1/models", modelsRoutes);
 app.use("/api/v1/reports", qcReportRoutes);
+app.use("/api/v1/team", teamRoutes);
 app.use("/api/v2/ocr", ocrRoutes);
 app.use("/api/v2/device-data", deviceDataRoute);
 

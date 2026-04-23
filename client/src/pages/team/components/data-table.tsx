@@ -24,7 +24,9 @@ import {
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table";
+import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { z } from "zod";
+
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { Label } from "@/components/ui/label";
 import {
   Sheet,
@@ -80,7 +83,7 @@ import {
 } from "lucide-react";
 
 export const schema = z.object({
-  id: z.number(),
+  id: z.union([z.number(), z.string()]),
   view: z.string(),
   name: z.string(),
   email: z.string(),
@@ -92,7 +95,7 @@ export const schema = z.object({
 });
 
 export const storeSchema = z.object({
-  id: z.number(),
+  id: z.union([z.number(), z.string()]),
   view: z.string(),
   ownerName: z.string(),
   storeId: z.string(),
@@ -161,12 +164,103 @@ const isDateWithinRange = (dateValue: string, range: string): boolean => {
   return true;
 };
 
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
+type ActionMenuCellProps = {
+  entityType: "employee" | "store";
+  entityLabel: string;
+  onEdit?: () => void;
+};
+
+const ActionMenuCell = ({ entityType, entityLabel, onEdit }: ActionMenuCellProps) => {
+  const [isDisableDialogOpen, setIsDisableDialogOpen] = React.useState(false);
+  const [isTerminateDialogOpen, setIsTerminateDialogOpen] = React.useState(false);
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+            size="icon"
+          >
+            <IconDotsVertical />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-32">
+          <DropdownMenuItem
+            onSelect={(event) => {
+              if (!onEdit) {
+                return;
+              }
+
+              event.preventDefault();
+              onEdit();
+            }}
+          >
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              setIsDisableDialogOpen(true);
+            }}
+          >
+            Disable
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={(event) => {
+              event.preventDefault();
+              setIsTerminateDialogOpen(true);
+            }}
+          >
+            Terminate
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ConfirmDialog
+        open={isDisableDialogOpen}
+        onOpenChange={setIsDisableDialogOpen}
+        onConfirm={() => {
+          setIsDisableDialogOpen(false);
+        }}
+        title={`Disable ${entityType}`}
+        description={`Are you sure you want to disable ${entityLabel}? You can re-enable it later.`}
+        confirmText="Disable"
+        cancelText="Cancel"
+      />
+
+      <ConfirmDialog
+        open={isTerminateDialogOpen}
+        onOpenChange={setIsTerminateDialogOpen}
+        onConfirm={() => {
+          setIsTerminateDialogOpen(false);
+        }}
+        title={`Terminate ${entityType}`}
+        description={`Are you sure you want to terminate ${entityLabel}? This action should be used carefully.`}
+        confirmText="Terminate"
+        cancelText="Cancel"
+      />
+    </>
+  );
+};
+
+const createEmployeeColumns = (
+  navigate: NavigateFunction,
+): ColumnDef<z.infer<typeof schema>>[] => [
   {
     accessorKey: "view",
     header: "View",
-    cell: () => (
-      <Button variant="ghost" size="sm" className="h-8 px-2 text-[#296CFF]">
+    cell: ({ row }) => (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2 text-[#296CFF]"
+        onClick={() => navigate(`/manage-team/view-employee/${encodeURIComponent(String(row.original.employeeId))}`)}
+      >
         <Eye className="mr-1 h-4 w-4" />
       </Button>
     ),
@@ -302,35 +396,37 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   {
     id: "actions",
     header: "Action",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-         <DropdownMenuItem>Terminate</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    cell: ({ row }) => (
+      <ActionMenuCell
+        entityType="employee"
+        entityLabel={row.original.name}
+        onEdit={() =>
+          navigate(
+            `/manage-team/edit-employee/${encodeURIComponent(String(row.original.employeeId))}`,
+          )
+        }
+      />
     ),
   },
 ];
 
-const storeColumns: ColumnDef<z.infer<typeof storeSchema>>[] = [
+const createStoreColumns = (
+  navigate: NavigateFunction,
+): ColumnDef<z.infer<typeof storeSchema>>[] => [
   {
     accessorKey: "view",
     header: "View",
-    cell: () => (
-      <Button variant="ghost" size="sm" className="h-8 px-2 text-[#296CFF]">
+    cell: ({ row }) => (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2 text-[#296CFF]"
+        onClick={() =>
+          navigate(
+            `/manage-team/view-store/${encodeURIComponent(String(row.original.storeId))}`,
+          )
+        }
+      >
         <Eye className="mr-1 h-4 w-4" />
       </Button>
     ),
@@ -453,26 +549,16 @@ const storeColumns: ColumnDef<z.infer<typeof storeSchema>>[] = [
   {
     id: "actions",
     header: "Action",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Terminate</DropdownMenuItem>
-         
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    cell: ({ row }) => (
+      <ActionMenuCell
+        entityType="store"
+        entityLabel={row.original.storeName}
+        onEdit={() =>
+          navigate(
+            `/manage-team/edit-store/${encodeURIComponent(String(row.original.storeId))}`,
+          )
+        }
+      />
     ),
   },
 ];
@@ -482,8 +568,17 @@ export function EmployeeDataTable({
 }: {
   data: { employees: z.infer<typeof schema>[]; stores: z.infer<typeof storeSchema>[] };
 }) {
-  const [employeeData] = React.useState(() => initialData.employees);
-  const [storeData] = React.useState(() => initialData.stores);
+  const navigate = useNavigate();
+  const employeeColumns = React.useMemo(
+    () => createEmployeeColumns(navigate),
+    [navigate],
+  );
+  const storeColumns = React.useMemo(
+    () => createStoreColumns(navigate),
+    [navigate],
+  );
+  const employeeData = initialData.employees;
+  const storeData = initialData.stores;
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -509,6 +604,12 @@ export function EmployeeDataTable({
     () => Array.from(new Set(employeeData.map((employee) => employee.role))).sort(),
     [employeeData],
   );
+  const roleCounts = React.useMemo(() => {
+    return employeeData.reduce<Record<string, number>>((accumulator, employee) => {
+      accumulator[employee.role] = (accumulator[employee.role] ?? 0) + 1;
+      return accumulator;
+    }, {});
+  }, [employeeData]);
   const statusOptions = React.useMemo(
     () => Array.from(new Set(employeeData.map((employee) => employee.status))).sort(),
     [employeeData],
@@ -524,7 +625,7 @@ export function EmployeeDataTable({
 
   const employeeTable = useReactTable({
     data: employeeData,
-    columns,
+    columns: employeeColumns,
     state: {
       sorting,
       columnVisibility,
@@ -715,7 +816,10 @@ export function EmployeeDataTable({
                         const RoleIcon = getRoleIcon(role);
                         return <RoleIcon className="mr-2 size-4 text-[#155DFC]" />;
                       })()}
-                      {role}
+                      <span>{role}</span>
+                      <span className="ml-auto text-xs text-[#667085]">
+                        {roleCounts[role] ?? 0}
+                      </span>
                     </DropdownMenuCheckboxItem>
                   ))}
                 </DropdownMenuContent>
@@ -768,7 +872,7 @@ export function EmployeeDataTable({
                         {roleOptions.map((role) => (
                           <label
                             key={role}
-                            className="flex items-center gap-2 cursor-pointer"
+                            className="flex w-full items-center gap-2 cursor-pointer"
                           >
                             <Checkbox
                               checked={selectedRoles.includes(role)}
@@ -784,6 +888,9 @@ export function EmployeeDataTable({
                                 );
                               })()}
                               <span className="text-sm text-[#344054]">{role}</span>
+                              <span className="ml-auto text-xs text-[#667085]">
+                                {roleCounts[role] ?? 0}
+                              </span>
                             </div>
                           </label>
                         ))}
@@ -1178,7 +1285,7 @@ export function EmployeeDataTable({
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={columns.length}
+                    colSpan={employeeColumns.length}
                     className="h-24 text-center"
                   >
                     No results.

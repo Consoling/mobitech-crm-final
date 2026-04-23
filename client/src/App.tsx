@@ -20,7 +20,11 @@ import QCReports from "./pages/reports/QCReports";
 import ViewQCReport from "./pages/reports/ViewQCReport";
 import APKDownload from "./pages/APKDownload";
 
-import ManageTeam from './pages/team/ManageTeam'
+import  TeamDashboard from './pages/team/TeamDashboard'
+import EditEmployee from "./pages/team/EditEmployee";
+import ViewEmployee from "./pages/team/ViewEmployee";
+import ViewStore from "./pages/team/ViewStore";
+import EditStore from "./pages/team/EditStore";
 
 
 const App = () => {
@@ -57,7 +61,11 @@ const App = () => {
           <Route path='/reports/qc-reports' element={<QCReports />} />
           <Route path='/reports/qc-reports/view/:reportId' element={<ViewQCReport />} />
 
-          <Route path='/manage-team/employees' element={<ManageTeam />} />
+          <Route path='/manage-team/employees' element={<TeamDashboard />} />
+          <Route path='/manage-team/edit-employee/:employeeID' element={<EditEmployee />} />
+          <Route path='/manage-team/view-employee/:employeeID' element={<ViewEmployee />} />
+          <Route path='/manage-team/view-store/:storeID' element={<ViewStore />} />
+          <Route path='/manage-team/edit-store/:storeID' element={<EditStore />} />
 
             {/* Add your protected routes here */}
             {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}

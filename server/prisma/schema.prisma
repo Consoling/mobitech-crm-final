@@ -49,6 +49,13 @@ model User {
   technician         Technician?      @relation("TechnicianToUser")
   DoorstepPickups    DoorstepPickup[]
   DiagnosticsData   DiagnosticsData[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([role])
+  @@index([isAdmin])
+  @@index([status, createdAt])
+  @@index([role, status, createdAt])
 }
 
 model Admin {
@@ -57,6 +64,9 @@ model Admin {
   firstName  String?
   lastName   String?
   user       User    @relation("AdminToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firstName])
+  @@index([lastName])
 }
 
 model Manager {
@@ -67,6 +77,9 @@ model Manager {
   aadharId    String       @unique
   bankDetails BankDetails?
   user        User         @relation("ManagerToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firstName])
+  @@index([lastName])
 }
 
 model Technician {
@@ -77,6 +90,9 @@ model Technician {
   aadharId    String       @unique
   bankDetails BankDetails?
   user        User         @relation("TechnicianToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firstName])
+  @@index([lastName])
 }
 
 model FieldExecutive {
@@ -87,6 +103,9 @@ model FieldExecutive {
   aadharId    String       @unique
   bankDetails BankDetails?
   user        User         @relation("FieldExecToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firstName])
+  @@index([lastName])
 }
 
 model SalesExecutive {
@@ -97,6 +116,9 @@ model SalesExecutive {
   aadharId    String       @unique
   bankDetails BankDetails?
   user        User         @relation("SalesExecToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firstName])
+  @@index([lastName])
 }
 
 model Store {
@@ -111,6 +133,11 @@ model Store {
   address     Address?
   bankDetails BankDetails?
   user        User         @relation("StoreToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([storeName])
+  @@index([ownerName])
+  @@index([ownerPhone])
 }
 
 model BankDetails {
