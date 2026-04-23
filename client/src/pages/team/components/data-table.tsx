@@ -565,8 +565,10 @@ const createStoreColumns = (
 
 export function EmployeeDataTable({
   data: initialData,
+  onTabChange,
 }: {
   data: { employees: z.infer<typeof schema>[]; stores: z.infer<typeof storeSchema>[] };
+  onTabChange?: (tab: "employees" | "stores") => void;
 }) {
   const navigate = useNavigate();
   const employeeColumns = React.useMemo(
@@ -729,9 +731,22 @@ export function EmployeeDataTable({
     [employeeTable],
   );
 
+  const handleTabChange = React.useCallback(
+    (nextTab: string) => {
+      if (nextTab !== "employees" && nextTab !== "stores") {
+        return;
+      }
+
+      setCurrentTab(nextTab);
+      onTabChange?.(nextTab);
+    },
+    [onTabChange],
+  );
+
   return (
     <Tabs
-      defaultValue="employees"
+      value={currentTab}
+      onValueChange={handleTabChange}
       className="w-full flex-col justify-start gap-6"
     >
       <div className="flex md:flex-row flex-col max-md:gap-y-3 max-md:items-start items-center justify-between px-4 lg:px-6 bg-[#FFFFFF] border py-2 ">
@@ -739,14 +754,12 @@ export function EmployeeDataTable({
           <TabsTrigger
             value="employees"
             className="data-[state=active]:text-[#296CFF]  hover:text-[#296CFF]"
-            onClick={() => setCurrentTab("employees")}
           >
             <UserCircle /> Employees <Badge variant="secondary">{employeeTable.getFilteredRowModel().rows.length}</Badge>
           </TabsTrigger>
           <TabsTrigger
             value="stores"
             className="data-[state=active]:text-[#296CFF]  hover:text-[#296CFF]"
-            onClick={() => setCurrentTab("stores")}
           >
             <Store /> Stores <Badge variant="secondary">{storeTable.getFilteredRowModel().rows.length}</Badge>
           </TabsTrigger>

@@ -68,6 +68,7 @@ type TeamTableData = {
 
 const TeamDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<"employees" | "stores">("employees");
   const [teamTableData, setTeamTableData] = useState<TeamTableData>({
     employees: [],
     stores: [],
@@ -162,7 +163,7 @@ const TeamDashboard = () => {
   return (
     <div className="px-6 py-6">
       <div className="flex items-center justify-between gap-4 mb-6 max-[550px]:flex-col max-[550px]:items-start">
-        {/* Wallet Icon with gradient background */}
+        {/* User Icon with gradient background */}
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#7F22FE] to-[#7008E7] flex items-center justify-center">
             <UsersRound className="w-6 h-6 text-white" />
@@ -189,6 +190,7 @@ const TeamDashboard = () => {
         wrapperClassName="mt-5 flex items-center justify-between gap-4 max-[550px]:flex-col max-[550px]:items-start max-[550px]:gap-4"
         value={searchTerm}
         onValueChange={setSearchTerm}
+        activeTab={activeTab}
       />
 
       {/* Stats Layer */}
@@ -313,7 +315,7 @@ const TeamDashboard = () => {
 
       {/* Employee List Layer */}
       <div className="mt-10">
-        <EmployeeDataTable data={teamTableData} />
+        <EmployeeDataTable data={teamTableData} onTabChange={setActiveTab} />
         {isLoading && (
           <p className="mt-3 text-sm text-[#62748E]">Loading latest team data...</p>
         )}

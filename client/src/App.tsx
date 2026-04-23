@@ -25,6 +25,8 @@ import EditEmployee from "./pages/team/EditEmployee";
 import ViewEmployee from "./pages/team/ViewEmployee";
 import ViewStore from "./pages/team/ViewStore";
 import EditStore from "./pages/team/EditStore";
+import AddEmployee from "./pages/team/AddEmployee";
+import AddStore from "./pages/team/AddStore";
 
 
 const App = () => {
@@ -66,6 +68,8 @@ const App = () => {
           <Route path='/manage-team/view-employee/:employeeID' element={<ViewEmployee />} />
           <Route path='/manage-team/view-store/:storeID' element={<ViewStore />} />
           <Route path='/manage-team/edit-store/:storeID' element={<EditStore />} />
+          <Route path='/manage-team/add-employee' element={<AddEmployee />} />
+          <Route path='/manage-team/add-store' element={<AddStore />} />
 
             {/* Add your protected routes here */}
             {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}

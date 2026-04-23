@@ -68,6 +68,7 @@ type TeamTableData = {
 
 const ManageTeam = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<"employees" | "stores">("employees");
   const [teamTableData, setTeamTableData] = useState<TeamTableData>({
     employees: [],
     stores: [],
@@ -189,6 +190,7 @@ const ManageTeam = () => {
         wrapperClassName="mt-5 flex items-center justify-between gap-4 max-[550px]:flex-col max-[550px]:items-start max-[550px]:gap-4"
         value={searchTerm}
         onValueChange={setSearchTerm}
+        activeTab={activeTab}
       />
 
       {/* Stats Layer */}
@@ -313,7 +315,7 @@ const ManageTeam = () => {
 
       {/* Employee List Layer */}
       <div className="mt-10">
-        <EmployeeDataTable data={teamTableData} />
+        <EmployeeDataTable data={teamTableData} onTabChange={setActiveTab} />
         {isLoading && (
           <p className="mt-3 text-sm text-[#62748E]">Loading latest team data...</p>
         )}

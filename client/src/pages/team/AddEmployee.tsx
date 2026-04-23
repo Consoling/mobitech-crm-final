@@ -1,8 +1,6 @@
+import { UsersRound } from "lucide-react"
 
-import { UsersRound } from 'lucide-react'
-
-
-const EditEmployee = () => {
+const AddEmployee = () => {
   return (
     <div className="px-6 py-6">
       <div className="flex items-center justify-between gap-4 mb-6 max-[550px]:flex-col max-[550px]:items-start">
@@ -14,16 +12,16 @@ const EditEmployee = () => {
 
           {/* Title and subtitle */}
           <div className="flex flex-col">
-            <h1 className="text-2xl font-bold">Employee Details</h1>
+            <h1 className="text-2xl font-bold">Add New Employees</h1>
             <p className="text-[#62748E] text-base font-normal">
-              Edit employee details and work information
+              Complete the form to register a new employee
             </p>
           </div>
         </div>
-        
+       
       </div>
     </div>
   )
 }
 
-export default EditEmployee
+export default AddEmployee

@@ -447,6 +447,199 @@ router.get("/employees", async (req: Request, res: Response) => {
 	}
 });
 
+router.get("/employees/:employeeID", async (req: Request, res: Response) => {
+	try {
+		const employeeID = String(req.params.employeeID ?? "").trim();
+
+		if (!employeeID) {
+			return res.status(400).json({ message: "employeeID is required" });
+		}
+
+		const cacheKey = `team:employee-details:${employeeID}`;
+		const cached = await readRouteCache<unknown>(cacheKey);
+		if (cached) {
+			return withCachingHeaders(req, res, cached, LIST_TTL_SECONDS);
+		}
+
+		const user = await prisma.user.findFirst({
+			where: {
+				AND: [
+					{ OR: [{ isAdmin: true }, { role: { in: EMPLOYEE_DB_ROLES } }] },
+					{
+						OR: [
+							{ admin: { is: { employeeId: employeeID } } },
+							{ manager: { is: { employeeId: employeeID } } },
+							{ technician: { is: { employeeId: employeeID } } },
+							{ fieldExecutive: { is: { employeeId: employeeID } } },
+							{ salesExecutive: { is: { employeeId: employeeID } } },
+						],
+					},
+				],
+			},
+			select: {
+				id: true,
+				phone: true,
+				email: true,
+				role: true,
+				status: true,
+				isAdmin: true,
+				profileImage: true,
+				aadharFrontImage: true,
+				aadharBackImage: true,
+				qualificationImage: true,
+				salary: true,
+				payoutDate: true,
+				storeId: true,
+				createdBy: true,
+				dateOfJoining: true,
+				dateOfTermination: true,
+				createdAt: true,
+				updatedAt: true,
+				admin: {
+					select: {
+						firstName: true,
+						lastName: true,
+						employeeId: true,
+					},
+				},
+				manager: {
+					select: {
+						firstName: true,
+						lastName: true,
+						employeeId: true,
+						aadharId: true,
+						bankDetails: {
+							select: {
+								accountNumber: true,
+								ifsc: true,
+								bankName: true,
+								beneficiaryName: true,
+								upiId: true,
+							},
+						},
+					},
+				},
+				technician: {
+					select: {
+						firstName: true,
+						lastName: true,
+						employeeId: true,
+						aadharId: true,
+						bankDetails: {
+							select: {
+								accountNumber: true,
+								ifsc: true,
+								bankName: true,
+								beneficiaryName: true,
+								upiId: true,
+							},
+						},
+					},
+				},
+				fieldExecutive: {
+					select: {
+						firstName: true,
+						lastName: true,
+						employeeId: true,
+						aadharId: true,
+						bankDetails: {
+							select: {
+								accountNumber: true,
+								ifsc: true,
+								bankName: true,
+								beneficiaryName: true,
+								upiId: true,
+							},
+						},
+					},
+				},
+				salesExecutive: {
+					select: {
+						firstName: true,
+						lastName: true,
+						employeeId: true,
+						aadharId: true,
+						bankDetails: {
+							select: {
+								accountNumber: true,
+								ifsc: true,
+								bankName: true,
+								beneficiaryName: true,
+								upiId: true,
+							},
+						},
+					},
+				},
+			},
+		});
+
+		if (!user) {
+			return res.status(404).json({ message: "Employee not found" });
+		}
+
+		const employeeId = getEmployeeId(user) ?? employeeID;
+		const profile = user.admin ?? user.manager ?? user.technician ?? user.fieldExecutive ?? user.salesExecutive;
+		const bankDetails =
+			user.manager?.bankDetails ??
+			user.technician?.bankDetails ??
+			user.fieldExecutive?.bankDetails ??
+			user.salesExecutive?.bankDetails ??
+			null;
+		const aadharId =
+			user.manager?.aadharId ??
+			user.technician?.aadharId ??
+			user.fieldExecutive?.aadharId ??
+			user.salesExecutive?.aadharId ??
+			null;
+
+		const payload = {
+			data: {
+				employeeId,
+				name: getDisplayName(user),
+				position: toUiRole(user.role, user.isAdmin),
+				status: toUiStatus(user.status),
+				email: user.email,
+				phone: user.phone,
+				avatar: getImagePayload(user.profileImage),
+				personalDetails: {
+					firstName: profile?.firstName ?? null,
+					lastName: profile?.lastName ?? null,
+					aadharId,
+					dateOfJoining: user.dateOfJoining,
+					dateOfTermination: user.dateOfTermination,
+				},
+				employmentDetails: {
+					salary: user.salary ? String(user.salary) : null,
+					payoutDate: user.payoutDate,
+					storeId: user.storeId,
+					createdBy: user.createdBy,
+					createdAt: user.createdAt,
+					updatedAt: user.updatedAt,
+				},
+				bankDetails: {
+					accountNumber: bankDetails?.accountNumber ?? null,
+					ifsc: bankDetails?.ifsc ?? null,
+					bankName: bankDetails?.bankName ?? null,
+					beneficiaryName: bankDetails?.beneficiaryName ?? null,
+					upiId: bankDetails?.upiId ?? null,
+				},
+				documents: {
+					aadharFront: getImagePayload(user.aadharFrontImage),
+					aadharBack: getImagePayload(user.aadharBackImage),
+					qualification: getImagePayload(user.qualificationImage),
+					agreement: null,
+				},
+			},
+		};
+
+		await writeRouteCache(cacheKey, payload, LIST_TTL_SECONDS);
+		return withCachingHeaders(req, res, payload, LIST_TTL_SECONDS);
+	} catch (error) {
+		console.error("team employee details error:", error);
+		return res.status(500).json({ message: "Internal Server Error" });
+	}
+});
+
 router.get("/stores", async (req: Request, res: Response) => {
 	try {
 		const page = parsePage(req.query.page);
@@ -579,6 +772,105 @@ router.get("/stores", async (req: Request, res: Response) => {
 		return withCachingHeaders(req, res, payload, LIST_TTL_SECONDS);
 	} catch (error) {
 		console.error("team stores error:", error);
+		return res.status(500).json({ message: "Internal Server Error" });
+	}
+});
+
+router.get("/stores/:storeID", async (req: Request, res: Response) => {
+	try {
+		const storeID = String(req.params.storeID ?? "").trim();
+
+		if (!storeID) {
+			return res.status(400).json({ message: "storeID is required" });
+		}
+
+		const cacheKey = `team:store-details:${storeID}`;
+		const cached = await readRouteCache<unknown>(cacheKey);
+		if (cached) {
+			return withCachingHeaders(req, res, cached, LIST_TTL_SECONDS);
+		}
+
+		const store = await prisma.store.findUnique({
+			where: { storeId: storeID },
+			select: {
+				userId: true,
+				storeId: true,
+				storeName: true,
+				ownerName: true,
+				ownerPhone: true,
+				ownerEmail: true,
+				createdAt: true,
+				updatedAt: true,
+				address: {
+					select: {
+						streetAddress: true,
+						city: true,
+						state: true,
+						country: true,
+						pinCode: true,
+					},
+				},
+				bankDetails: {
+					select: {
+						accountNumber: true,
+						ifsc: true,
+						bankName: true,
+						beneficiaryName: true,
+						upiId: true,
+					},
+				},
+				user: {
+					select: {
+						status: true,
+						profileImage: true,
+						createdAt: true,
+						updatedAt: true,
+					},
+				},
+			},
+		});
+
+		if (!store) {
+			return res.status(404).json({ message: "Store not found" });
+		}
+
+		const payload = {
+			data: {
+				storeId: store.storeId,
+				storeName: store.storeName,
+				ownerName: store.ownerName,
+				ownerPhone: store.ownerPhone,
+				ownerEmail: store.ownerEmail,
+				status: toUiStatus(store.user?.status ?? UserStatus.ACTIVE),
+				avatar: getImagePayload(store.user?.profileImage ?? null),
+				address: {
+					streetAddress: store.address?.streetAddress ?? null,
+					city: store.address?.city ?? null,
+					state: store.address?.state ?? null,
+					country: store.address?.country ?? null,
+					pinCode: store.address?.pinCode ?? null,
+				},
+				bankDetails: {
+					accountNumber: store.bankDetails?.accountNumber ?? null,
+					ifsc: store.bankDetails?.ifsc ?? null,
+					bankName: store.bankDetails?.bankName ?? null,
+					beneficiaryName: store.bankDetails?.beneficiaryName ?? null,
+					upiId: store.bankDetails?.upiId ?? null,
+				},
+				meta: {
+					storeDbId: store.userId,
+					storeCreatedAt: store.createdAt,
+					storeUpdatedAt: store.updatedAt,
+					userCreatedAt: store.user?.createdAt ?? null,
+					userUpdatedAt: store.user?.updatedAt ?? null,
+				},
+			},
+		};
+
+		await writeRouteCache(cacheKey, payload, LIST_TTL_SECONDS);
+		return withCachingHeaders(req, res, payload, LIST_TTL_SECONDS);
+	} catch (error) {
+		console.error("team store details error:", error);
 		return res.status(500).json({ message: "Internal Server Error" });
 	}
 });

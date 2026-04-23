@@ -1,9 +1,284 @@
-import React from 'react'
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { apiJson } from "@/lib/api";
+import { Download, Loader2, Store } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+
+type StoreDetailsResponse = {
+  data: {
+    storeId: string;
+    storeName: string;
+    ownerName: string;
+    ownerPhone: string;
+    ownerEmail: string;
+    status: "Active" | "Inactive";
+    avatar: { key: string; url: string | null } | null;
+    address: {
+      streetAddress: string | null;
+      city: string | null;
+      state: string | null;
+      country: string | null;
+      pinCode: string | null;
+    };
+    bankDetails: {
+      accountNumber: string | null;
+      ifsc: string | null;
+      bankName: string | null;
+      beneficiaryName: string | null;
+      upiId: string | null;
+    };
+    meta: {
+      storeDbId: string;
+      storeCreatedAt: string;
+      storeUpdatedAt: string;
+      userCreatedAt: string | null;
+      userUpdatedAt: string | null;
+    };
+  };
+};
+
+const formatDate = (value: string | null | undefined) => {
+  if (!value) {
+    return "-";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(parsed);
+};
 
 const ViewStore = () => {
-  return (
-    <div>ViewStore</div>
-  )
-}
+  const { storeID } = useParams<{ storeID: string }>();
+  const [details, setDetails] = useState<StoreDetailsResponse["data"] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-export default ViewStore
+  useEffect(() => {
+    let isActive = true;
+
+    const loadDetails = async () => {
+      if (!storeID) {
+        setErrorMessage("Store ID is missing from route");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setErrorMessage(null);
+
+        const result = await apiJson<StoreDetailsResponse>(
+          `/team/stores/${encodeURIComponent(storeID)}`,
+        );
+
+        if (!isActive) {
+          return;
+        }
+
+        if (!result.response.ok || !result.data?.data) {
+          setErrorMessage("Failed to load store details");
+          setDetails(null);
+          return;
+        }
+
+        setDetails(result.data.data);
+      } catch (error) {
+        if (isActive) {
+          setErrorMessage("Failed to load store details");
+          setDetails(null);
+        }
+        console.error("Failed to load store details:", error);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadDetails();
+
+    return () => {
+      isActive = false;
+    };
+  }, [storeID]);
+
+  return (
+    <div className="px-6 py-6">
+      <div className="mb-6 flex items-center justify-between gap-4 max-[550px]:flex-col max-[550px]:items-start">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-[#7F22FE] to-[#7008E7]">
+            <Store className="h-6 w-6 text-white" />
+          </div>
+
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold">Store Details</h1>
+            <p className="text-base font-normal text-[#62748E]">
+              Complete overview of store profile and owner information
+            </p>
+          </div>
+        </div>
+
+        <div className="max-[550px]:mt-3 max-[550px]:w-full">
+          <Button className="radius-[34px] ml-auto flex h-12 items-center gap-2 border border-[#E2E8F0] bg-[#FFFFFF] text-[#314158] shadow-sm shadow-gray-600/40 hover:border-gray-300 hover:bg-gray-100 max-[550px]:w-full min-[550px]:h-11.5 min-[550px]:w-30">
+            <Download />
+            <span className="md:block">Export</span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        {isLoading && (
+          <Card className="flex min-h-40 items-center justify-center border border-[#E2E8F0] bg-white">
+            <div className="flex items-center gap-2 text-[#475367]">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Loading store details...</span>
+            </div>
+          </Card>
+        )}
+
+        {!isLoading && errorMessage && (
+          <Card className="min-h-40 border border-[#FECACA] bg-[#FEF2F2] p-6 text-sm text-[#B91C1C]">
+            {errorMessage}
+          </Card>
+        )}
+
+        {!isLoading && !errorMessage && details && (
+          <div className="space-y-5">
+            <Card className="border border-[#E2E8F0] bg-white p-4 sm:p-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div className="flex items-center gap-3 md:col-span-1">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F5F9] text-lg font-semibold text-[#334155]">
+                    {details.storeName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-[#0F172B]">{details.storeName}</p>
+                    <p className="text-sm text-[#64748B]">Store ID: {details.storeId}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#64748B]">Owner Name</p>
+                  <p className="text-sm font-medium text-[#0F172B]">{details.ownerName || "-"}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#64748B]">Owner Phone</p>
+                  <p className="text-sm font-medium text-[#0F172B]">{details.ownerPhone || "-"}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#64748B]">Status</p>
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      details.status === "Active"
+                        ? "bg-[#DCFCE7] text-[#15803D]"
+                        : "bg-[#FEE2E2] text-[#B91C1C]"
+                    }`}
+                  >
+                    {details.status}
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#64748B]">Owner Email</p>
+                  <p className="break-all text-sm font-medium text-[#0F172B]">{details.ownerEmail || "-"}</p>
+                </div>
+              </div>
+            </Card>
+
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <Card className="overflow-hidden border border-[#E2E8F0] bg-white">
+                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Address Details</div>
+                <div className="space-y-3 p-4 text-sm">
+                  <div>
+                    <p className="text-xs text-[#64748B]">Street Address</p>
+                    <p className="font-medium text-[#0F172B]">{details.address.streetAddress || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">City</p>
+                    <p className="font-medium text-[#0F172B]">{details.address.city || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">State</p>
+                    <p className="font-medium text-[#0F172B]">{details.address.state || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">Country</p>
+                    <p className="font-medium text-[#0F172B]">{details.address.country || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">Pin Code</p>
+                    <p className="font-medium text-[#0F172B]">{details.address.pinCode || "-"}</p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="overflow-hidden border border-[#E2E8F0] bg-white">
+                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Bank Details</div>
+                <div className="space-y-3 p-4 text-sm">
+                  <div>
+                    <p className="text-xs text-[#64748B]">Account Number</p>
+                    <p className="font-medium text-[#0F172B]">{details.bankDetails.accountNumber || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">IFSC Code</p>
+                    <p className="font-medium text-[#0F172B]">{details.bankDetails.ifsc || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">Bank Name</p>
+                    <p className="font-medium text-[#0F172B]">{details.bankDetails.bankName || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">UPI ID</p>
+                    <p className="font-medium text-[#0F172B]">{details.bankDetails.upiId || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">Beneficiary Name</p>
+                    <p className="font-medium text-[#0F172B]">{details.bankDetails.beneficiaryName || "-"}</p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="overflow-hidden border border-[#E2E8F0] bg-white xl:col-span-2">
+                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Meta Information</div>
+                <div className="grid grid-cols-1 gap-3 p-4 text-sm md:grid-cols-2 xl:grid-cols-3">
+                  <div>
+                    <p className="text-xs text-[#64748B]">Store DB ID</p>
+                    <p className="break-all font-medium text-[#0F172B]">{details.meta.storeDbId || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">Store Created At</p>
+                    <p className="font-medium text-[#0F172B]">{formatDate(details.meta.storeCreatedAt)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">Store Updated At</p>
+                    <p className="font-medium text-[#0F172B]">{formatDate(details.meta.storeUpdatedAt)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">User Created At</p>
+                    <p className="font-medium text-[#0F172B]">{formatDate(details.meta.userCreatedAt)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748B]">User Updated At</p>
+                    <p className="font-medium text-[#0F172B]">{formatDate(details.meta.userUpdatedAt)}</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ViewStore;

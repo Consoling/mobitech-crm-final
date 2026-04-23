@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search } from "lucide-react";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 type EmployeeSuggestion = {
   type: "employee";
@@ -29,19 +29,23 @@ type TeamSearchResponse = {
 type TeamEntitySearchProps = {
   value: string;
   onValueChange: (value: string) => void;
+  activeTab?: "employees" | "stores";
   wrapperClassName?: string;
 };
 
 const TeamEntitySearch = ({
   value,
   onValueChange,
+  activeTab = "employees",
   wrapperClassName = "mt-5 flex items-center justify-between gap-4 max-[550px]:flex-col max-[550px]:items-start max-[550px]:gap-4",
 }: TeamEntitySearchProps) => {
   const navigate = useNavigate();
   const rootRef = React.useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = React.useState(false);
   const [isSearching, setIsSearching] = React.useState(false);
-  const [items, setItems] = React.useState<Array<EmployeeSuggestion | StoreSuggestion>>([]);
+  const [items, setItems] = React.useState<
+    Array<EmployeeSuggestion | StoreSuggestion>
+  >([]);
 
   React.useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
@@ -105,7 +109,9 @@ const TeamEntitySearch = ({
     setIsOpen(false);
 
     if (item.type === "employee") {
-      navigate(`/manage-team/view-employee/${encodeURIComponent(item.employeeId)}`);
+      navigate(
+        `/manage-team/view-employee/${encodeURIComponent(item.employeeId)}`,
+      );
       return;
     }
 
@@ -135,14 +141,22 @@ const TeamEntitySearch = ({
         {isOpen && value.trim().length >= 2 && (
           <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-sm px-3 py-2 border border-[#E2E8F0] bg-white shadow-lg">
             {isSearching ? (
-              <div className="px-3 py-2 text-sm text-[#62748E]">Searching...</div>
+              <div className="px-3 py-2 text-sm text-[#62748E]">
+                Searching...
+              </div>
             ) : items.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-[#62748E]">No matching employee or store found</div>
+              <div className="px-3 py-2 text-sm text-[#62748E]">
+                No matching employee or store found
+              </div>
             ) : (
               <ul className="max-h-80 overflow-y-auto ">
                 {items.map((item, index) => {
-                  const key = item.type === "employee" ? `employee-${item.employeeId}` : `store-${item.storeId}`;
-                  const title = item.type === "employee" ? item.name : item.storeName;
+                  const key =
+                    item.type === "employee"
+                      ? `employee-${item.employeeId}`
+                      : `store-${item.storeId}`;
+                  const title =
+                    item.type === "employee" ? item.name : item.storeName;
                   const subtitle =
                     item.type === "employee"
                       ? `${item.employeeId} | ${item.phone}${item.email ? ` | ${item.email}` : ""}`
@@ -156,12 +170,16 @@ const TeamEntitySearch = ({
                         onClick={() => handleSelect(item)}
                       >
                         <div className="flex items-center justify-between gap-3 ">
-                          <span className="text-sm font-medium text-[#0F172B]">{title}</span>
+                          <span className="text-sm font-medium text-[#0F172B]">
+                            {title}
+                          </span>
                           <span className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-xs font-medium text-[#334155]">
                             {item.type === "employee" ? "Employee" : "Store"}
                           </span>
                         </div>
-                        <p className="mt-1 truncate text-xs text-[#64748B]">{subtitle}</p>
+                        <p className="mt-1 truncate text-xs text-[#64748B]">
+                          {subtitle}
+                        </p>
                       </button>
                     </li>
                   );
@@ -173,10 +191,19 @@ const TeamEntitySearch = ({
       </div>
 
       <div className="max-[550px]:w-full max-[550px]:mt-3">
-        <Button className="max-[550px]:w-full h-12 ml-auto flex items-center justify-center gap-2 whitespace-nowrap px-4 bg-[#7F22FE] text-[#FFFFFF] hover:bg-[#7008E7] shadow-sm shadow-gray-600/40 rounded-[34px] min-[550px]:h-11.5 min-[550px]:min-w-42.5">
+        <Link
+          to={
+            activeTab === "employees"
+              ? "/manage-team/add-employee"
+              : "/manage-team/add-store"
+          }
+          className="max-[550px]:w-full h-12 ml-auto flex items-center justify-center gap-2 whitespace-nowrap px-4 bg-[#7F22FE] text-[#FFFFFF] hover:bg-[#7008E7] shadow-sm shadow-gray-600/40 rounded-[34px] min-[550px]:h-11.5 min-[550px]:min-w-42.5"
+        >
           <Plus />
-          <span className="md:block">Add New Employee</span>
-        </Button>
+          <span className="md:block">
+            {activeTab === "employees" ? "Add New Employee" : "Add New Store"}
+          </span>
+        </Link>
       </div>
     </div>
   );
