@@ -11,8 +11,7 @@ import idCardLogo from "@/assets/id-card-assets/id-card-logo.png";
 import { apiJson } from "@/lib/api";
 import { IconAddressBook, IconBuildingBank, IconBuildingStore, IconCalendar, IconCoinRupee, IconFile, IconId, IconIdBadge, IconIdBadge2, IconLogin2, IconPhone, IconRefresh, IconSticker2, IconUser, IconUserCircle, IconWallet, IconWorldMap } from "@tabler/icons-react";
 import { ArrowLeft, ArrowRight, Download, Eye, Loader2, UsersRound } from "lucide-react";
-import * as bwipjs from "bwip-js";
-import html2canvas from "html2canvas";
+
 import React, { useEffect, useMemo, useState } from "react";
 import { useRef } from "react";
 import { useParams } from "react-router-dom";
@@ -95,21 +94,7 @@ const ViewEmployee = () => {
       return "";
     }
 
-    try {
-      return bwipjs.toSVG({
-        bcid: "code128",
-        text: details.employeeId,
-        scale: 2,
-        height: 10,
-        includetext: false,
-        backgroundcolor: "FFFFFF",
-        paddingheight: 0,
-        paddingwidth: 0,
-      });
-    } catch (error) {
-      console.error("Failed to render employee barcode:", error);
-      return "";
-    }
+   
   }, [details?.employeeId]);
 
   const idCardBarcodeDataUrl = useMemo(() => {
@@ -173,32 +158,7 @@ const ViewEmployee = () => {
       return;
     }
 
-    try {
-      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-
-      const capture = await html2canvas(idCardRef.current, {
-        backgroundColor: null,
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-      });
-
-      const blob = await new Promise<Blob | null>((resolve) => capture.toBlob(resolve, "image/png"));
-      if (!blob) {
-        throw new Error("Unable to create PNG blob from ID card capture");
-      }
-
-      const blobUrl = URL.createObjectURL(blob);
-      const downloadLink = document.createElement("a");
-      downloadLink.href = blobUrl;
-      downloadLink.download = `${details.employeeId || "employee"}-id-card.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      downloadLink.remove();
-      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch (error) {
-      console.error("Failed to download ID card:", error);
-    }
+   
   };
 
   useEffect(() => {
