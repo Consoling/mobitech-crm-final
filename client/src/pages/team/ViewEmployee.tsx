@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { apiJson } from "@/lib/api";
-import { Download, Loader2, UsersRound } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { IconAddressBook, IconBuildingBank, IconBuildingStore, IconCalendar, IconCoinRupee, IconFile, IconId, IconIdBadge, IconIdBadge2, IconLogin2, IconPhone, IconRefresh, IconSticker2, IconUser, IconUserCircle, IconWallet, IconWorldMap } from "@tabler/icons-react";
+import { Download, Eye, Loader2, UsersRound } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 
 type EmployeeDetailsResponse = {
   data: {
@@ -61,6 +62,12 @@ const formatDate = (value: string | null | undefined) => {
     day: "2-digit",
     year: "numeric",
   }).format(parsed);
+};
+
+const maskAccountNumber = (accountNumber: string | null | undefined) => {
+  if (!accountNumber) return "-";
+  if (accountNumber.length <= 4) return accountNumber;
+  return "x".repeat(8) + accountNumber.slice(-4);
 };
 
 const ViewEmployee = () => {
@@ -160,146 +167,233 @@ const ViewEmployee = () => {
 
         {!isLoading && !errorMessage && details && (
           <div className="space-y-5">
-            <Card className="border border-[#E2E8F0] bg-white p-4 sm:p-5">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <div className="flex items-center gap-3 md:col-span-1">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F5F9] text-lg font-semibold text-[#334155]">
-                    {details.name.charAt(0).toUpperCase()}
+            <Card className="gap-0 overflow-hidden border border-[#E2E8F0] bg-white py-0">
+              <div className="border-b border-[#E2E8F0] px-6 py-5">
+                <h2 className="text-lg font-semibold text-[#101928]">Your Profile</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
+                <div className="border-b border-[#E2E8F0] px-6 py-6 md:border-b-0 md:border-r">
+                  <div className="flex items-center gap-4 md:flex-col md:items-start">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-[200px] bg-[#F1F5F9] text-xl font-semibold text-[#334155]">
+                      {details.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-[#101928]">{details.name}</p>
+                      <p className="text-sm mt-1 text-[#475367] font-normal">EMP. ID: {details.employeeId}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-base font-semibold text-[#0F172B]">{details.name}</p>
-                    <p className="text-sm text-[#64748B]">EMP ID: {details.employeeId}</p>
+                </div>
+
+                <div className="px-6 py-6">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    <div>
+                      <p className="text-sm text-[#475367]">Position</p>
+                      <p className="text-base font-semibold text-[#101928]">{details.position}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-[#475367]">Phone Number</p>
+                      <p className="text-base font-semibold text-[#101928]">{details.phone || "-"}</p>
+                    </div>
+
+                    <div className="inline-flex flex-col items-start gap-1.5" >
+                      <p className="text-sm text-[#475367]">Status</p>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${
+                          details.status === "Active"
+                            ? "bg-[#E7F6EC] text-[#036B26]"
+                            : "bg-[#FEE2E2] text-[#B91C1C]"
+                        }`}
+                      >
+                        {details.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-[#475367]">Email</p>
+                      <p className="break-all text-base font-semibold text-[#101928]">{details.email || "-"}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-[#475367]">Date of Joining</p>
+                      <p className="text-base font-semibold text-[#101928]">{formatDate(details.personalDetails.dateOfJoining)}</p>
+                    </div>
+
+                    <div className="inline-flex flex-col items-start gap-1.5">
+                      <p className="text-sm text-[#475367]">ID Card</p>
+                     <Link
+                          to={''}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center rounded-2xl border border-[#D0D5DD] px-4 py-2 text-sm font-medium text-[#101928] hover:bg-[#F8FAFC]"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View ID Card
+                        </Link>
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <p className="text-xs text-[#64748B]">Position</p>
-                  <p className="text-sm font-medium text-[#0F172B]">{details.position}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-[#64748B]">Phone Number</p>
-                  <p className="text-sm font-medium text-[#0F172B]">{details.phone || "-"}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-[#64748B]">Status</p>
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      details.status === "Active"
-                        ? "bg-[#DCFCE7] text-[#15803D]"
-                        : "bg-[#FEE2E2] text-[#B91C1C]"
-                    }`}
-                  >
-                    {details.status}
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-xs text-[#64748B]">Email</p>
-                  <p className="break-all text-sm font-medium text-[#0F172B]">{details.email || "-"}</p>
                 </div>
               </div>
             </Card>
 
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-              <Card className="overflow-hidden border border-[#E2E8F0] bg-white">
-                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Personal Details</div>
-                <div className="space-y-3 p-4 text-sm">
-                  <div>
-                    <p className="text-xs text-[#64748B]">First Name</p>
-                    <p className="font-medium text-[#0F172B]">{details.personalDetails.firstName || "-"}</p>
+              <Card className="gap-0 overflow-hidden border border-[#E2E8F0] bg-white py-0">
+               <div className="bg-black px-4 py-5 text-sm font-semibold text-white items-center flex gap-2">
+                  <IconAddressBook className="mr-1 inline h-5.5 w-5.5 text-[#98A2B3]" />
+                  <span>Personal Details</span></div>
+                <div className="space-y-6 p-6 text-sm">
+                  <div className="flex items-start gap-3">
+                    <IconPhone className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">First Name</p>
+                      <p className="font-medium text-[#0F172B] text-sm">{details.personalDetails.firstName || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Last Name</p>
-                    <p className="font-medium text-[#0F172B]">{details.personalDetails.lastName || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconUser className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Last Name</p>
+                      <p className="font-medium text-[#0F172B]">{details.personalDetails.lastName || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Aadhar ID</p>
-                    <p className="font-medium text-[#0F172B]">{details.personalDetails.aadharId || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconIdBadge2 className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Aadhar ID</p>
+                      <p className="font-medium text-[#0F172B]">{details.personalDetails.aadharId || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Date of Joining</p>
-                    <p className="font-medium text-[#0F172B]">{formatDate(details.personalDetails.dateOfJoining)}</p>
+                  <div className="flex items-start gap-3">
+                    <IconLogin2 className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Date of Joining</p>
+                      <p className="font-medium text-[#0F172B]">{formatDate(details.personalDetails.dateOfJoining)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Date of Termination</p>
-                    <p className="font-medium text-[#0F172B]">{formatDate(details.personalDetails.dateOfTermination)}</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="overflow-hidden border border-[#E2E8F0] bg-white">
-                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Employment Details</div>
-                <div className="space-y-3 p-4 text-sm">
-                  <div>
-                    <p className="text-xs text-[#64748B]">Salary</p>
-                    <p className="font-medium text-[#0F172B]">{details.employmentDetails.salary ? `Rs ${details.employmentDetails.salary}` : "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Payout Date</p>
-                    <p className="font-medium text-[#0F172B]">{details.employmentDetails.payoutDate ?? "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Store ID</p>
-                    <p className="font-medium text-[#0F172B]">{details.employmentDetails.storeId || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Created By</p>
-                    <p className="font-medium text-[#0F172B]">{details.employmentDetails.createdBy || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Created At</p>
-                    <p className="font-medium text-[#0F172B]">{formatDate(details.employmentDetails.createdAt)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Updated At</p>
-                    <p className="font-medium text-[#0F172B]">{formatDate(details.employmentDetails.updatedAt)}</p>
+                  <div className="flex items-start gap-3">
+                    <IconCalendar className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Date of Termination</p>
+                      <p className="font-medium text-[#0F172B]">{formatDate(details.personalDetails.dateOfTermination)}</p>
+                    </div>
                   </div>
                 </div>
               </Card>
 
-              <Card className="overflow-hidden border border-[#E2E8F0] bg-white">
-                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Bank Details</div>
-                <div className="space-y-3 p-4 text-sm">
-                  <div>
-                    <p className="text-xs text-[#64748B]">Account Number</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.accountNumber || "-"}</p>
+              <Card className="gap-0 overflow-hidden border border-[#E2E8F0] bg-white py-0">
+               <div className="bg-black px-4 py-5 text-sm font-semibold text-white items-center flex gap-2">
+                  <IconUserCircle className="mr-1 inline h-5.5 w-5.5 text-[#98A2B3]" />
+                  <span>Employee Details</span></div>
+                <div className="space-y-6 p-6 text-sm">
+                  <div className="flex items-start gap-3">
+                    <IconWallet className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Salary</p>
+                      <p className="font-medium text-[#0F172B]">{details.employmentDetails.salary ? `Rs ${details.employmentDetails.salary}` : "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">IFSC Code</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.ifsc || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconCoinRupee className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Payout Date</p>
+                      <p className="font-medium text-[#0F172B]">{details.employmentDetails.payoutDate ?? "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Bank Name</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.bankName || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconBuildingStore className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Store ID</p>
+                      <p className="font-medium text-[#0F172B]">{details.employmentDetails.storeId || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">UPI ID</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.upiId || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconUser className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Created By</p>
+                      <p className="font-medium text-[#0F172B]">{details.employmentDetails.createdBy || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Beneficiary Name</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.beneficiaryName || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconWorldMap className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Created At</p>
+                      <p className="font-medium text-[#0F172B]">{formatDate(details.employmentDetails.createdAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <IconRefresh className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Updated At</p>
+                      <p className="font-medium text-[#0F172B]">{formatDate(details.employmentDetails.updatedAt)}</p>
+                    </div>
                   </div>
                 </div>
               </Card>
 
-              <Card className="overflow-hidden border border-[#E2E8F0] bg-white">
-                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Documents</div>
-                <div className="space-y-4 p-4 text-sm">
+              <Card className="gap-0 overflow-hidden border border-[#E2E8F0] bg-white py-0">
+              <div className="bg-black px-4 py-5 text-sm font-semibold text-white items-center flex gap-2">
+                  <IconBuildingBank className="mr-1 inline h-5.5 w-5.5 text-[#98A2B3]" />
+                  <span>Bank Details</span></div>
+                <div className="space-y-6 p-6 text-sm">
+                  <div className="flex items-start gap-3">
+                    <IconBuildingBank className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Account Number</p>
+                      <p className="font-medium text-[#0F172B]">{maskAccountNumber(details.bankDetails.accountNumber)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <IconSticker2 className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">IFSC Code</p>
+                      <p className="font-medium text-[#0F172B]">{details.bankDetails.ifsc || "-"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <IconUser className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Bank Name</p>
+                      <p className="font-medium text-[#0F172B]">{details.bankDetails.bankName || "-"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <IconId className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">UPI ID</p>
+                      <p className="font-medium text-[#0F172B]">{details.bankDetails.upiId || "-"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <IconUser  className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Beneficiary Name</p>
+                      <p className="font-medium text-[#AD3307]">{details.bankDetails.beneficiaryName || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="gap-0 overflow-hidden border border-[#E2E8F0] bg-white py-0">
+                <div className="bg-black px-4 py-5 text-sm font-semibold text-white items-center flex gap-2">
+                  <IconFile className="mr-1 inline h-5.5 w-5.5 text-[#98A2B3]" />
+                  <span>Documents</span></div>
+                <div className="space-y-6 p-6 text-sm">
                   {[
-                    { label: "Aadhar Front", value: details.documents.aadharFront },
-                    { label: "Aadhar Back", value: details.documents.aadharBack },
-                    { label: "Qualification", value: details.documents.qualification },
-                    { label: "Agreement", value: details.documents.agreement },
+                    { label: "Aadhar Front", value: details.documents.aadharFront, icon: IconIdBadge },
+                    { label: "Aadhar Back", value: details.documents.aadharBack, icon: IconIdBadge2 },
+                    { label: "Qualification", value: details.documents.qualification, icon: IconIdBadge2 },
+                    { label: "Agreement", value: details.documents.agreement, icon: IconIdBadge2 },
                   ].map((document) => (
                     <div key={document.label} className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs text-[#64748B]">{document.label}</p>
-                        <p className="font-medium text-[#0F172B]">
-                          {document.value?.url ? "View document" : "Not uploaded"}
-                        </p>
+                      <div className="flex items-start gap-3">
+                        {React.createElement(document.icon, { className: "mt-1 h-5  w-5 text-[#98A2B3]" })}
+                        <div>
+                          <p className="text-xs text-[#64748B]">{document.label}</p>
+                          <p className="font-medium text-[#0F172B]">
+                            {document.value?.url ? "View document" : "Not uploaded"}
+                          </p>
+                        </div>
                       </div>
                       {document.value?.url && (
                         <a

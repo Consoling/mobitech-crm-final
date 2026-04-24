@@ -73,12 +73,12 @@ const ModelsView = () => {
     modelCodes: [] as string[],
   });
 
-  const handleOpenAddModel = () => {
+  const handleOpenAddModel = (model: ModelData) => {
     setFormMode('add');
-    setEditingModel(null);
+    setEditingModel(model);
     setFormData({
       modelCode: '',
-      modelCodes: [],
+      modelCodes: model.modelCodes || [],
     });
     setIsModelFormOpen(true);
   };
@@ -408,7 +408,7 @@ const ModelsView = () => {
                               <Pencil className="text-white" size={12} />
                             </div>
                             <div 
-                              onClick={handleOpenAddModel}
+                              onClick={() => handleOpenAddModel(model)}
                               className="rounded-full h-8 w-8 bg-gray-300 flex items-center justify-center hover:cursor-pointer hover:bg-gray-400 transition-colors"
                             >
                               <Plus className="text-black" size={12} />
@@ -569,7 +569,7 @@ const ModelsView = () => {
 
       {/* Manage Model Codes Dialog */}
       <Dialog open={isModelFormOpen} onOpenChange={setIsModelFormOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-137.5">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
               Manage Model Codes
@@ -608,7 +608,7 @@ const ModelsView = () => {
             {/* Existing Model Codes */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700">
-                {editingModel ? 'Existing Model Codes' : 'Model Codes'} ({formData.modelCodes.length})
+                Existing Model Codes ({formData.modelCodes.length})
               </Label>
               {formData.modelCodes.length > 0 ? (
                 <div className="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[100px]">
@@ -626,9 +626,7 @@ const ModelsView = () => {
                 </div>
               ) : (
                 <div className="p-8 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                  <p className="text-gray-400 text-sm">
-                    {editingModel ? 'No model codes found for this model' : 'No model codes added yet'}
-                  </p>
+                  <p className="text-gray-400 text-sm">No model codes found for this model</p>
                 </div>
               )}
             </div>

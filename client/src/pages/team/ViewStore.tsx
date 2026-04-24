@@ -1,6 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { apiJson } from "@/lib/api";
+import {
+  IconAddressBook,
+  IconBuildingBank,
+  IconBuildingStore,
+  IconMapPin,
+  IconMapPins,
+  IconNumber,
+  IconUser,
+  IconUserCircle,
+  IconWorld,
+} from "@tabler/icons-react";
 import { Download, Loader2, Store } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -54,6 +65,12 @@ const formatDate = (value: string | null | undefined) => {
     day: "2-digit",
     year: "numeric",
   }).format(parsed);
+};
+
+const maskAccountNumber = (accountNumber: string | null | undefined) => {
+  if (!accountNumber) return "-";
+  if (accountNumber.length <= 4) return accountNumber;
+  return "x".repeat(8) + accountNumber.slice(-4);
 };
 
 const ViewStore = () => {
@@ -153,126 +170,158 @@ const ViewStore = () => {
 
         {!isLoading && !errorMessage && details && (
           <div className="space-y-5">
-            <Card className="border border-[#E2E8F0] bg-white p-4 sm:p-5">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <div className="flex items-center gap-3 md:col-span-1">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F5F9] text-lg font-semibold text-[#334155]">
+            <Card className="gap-0 overflow-hidden border border-[#E2E8F0] bg-white py-0">
+              <div className="border-b border-[#E2E8F0] px-6 py-5">
+                <h2 className="text-lg font-semibold text-[#101928]">Your Profile</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
+                <div className="border-b border-[#E2E8F0] px-6 py-6 md:border-b-0 md:border-r">
+                  <div className="flex items-center gap-4 md:flex-col md:items-start">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-[200px] bg-[#F1F5F9] text-xl font-semibold text-[#334155]">
                     {details.storeName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-[#101928]">{details.storeName}</p>
+                      <p className="mt-1 text-sm font-normal text-[#475367]">STORE ID: {details.storeId}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-base font-semibold text-[#0F172B]">{details.storeName}</p>
-                    <p className="text-sm text-[#64748B]">Store ID: {details.storeId}</p>
+                </div>
+
+                <div className="px-6 py-6">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    <div>
+                      <p className="text-sm text-[#475367]">Owner Name</p>
+                      <p className="text-base font-semibold text-[#101928]">{details.ownerName || "-"}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-[#475367]">Owner Phone</p>
+                      <p className="text-base font-semibold text-[#101928]">{details.ownerPhone || "-"}</p>
+                    </div>
+
+                    <div className="inline-flex flex-col items-start gap-1.5">
+                      <p className="text-sm text-[#475367]">Status</p>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${
+                          details.status === "Active"
+                            ? "bg-[#E7F6EC] text-[#036B26]"
+                            : "bg-[#FEE2E2] text-[#B91C1C]"
+                        }`}
+                      >
+                        {details.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-[#475367]">Owner Email</p>
+                      <p className="break-all text-base font-semibold text-[#101928]">{details.ownerEmail || "-"}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-[#475367]">Store Created At</p>
+                      <p className="text-base font-semibold text-[#101928]">{formatDate(details.meta.storeCreatedAt)}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-[#475367]">Store Updated At</p>
+                      <p className="text-base font-semibold text-[#101928]">{formatDate(details.meta.storeUpdatedAt)}</p>
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <p className="text-xs text-[#64748B]">Owner Name</p>
-                  <p className="text-sm font-medium text-[#0F172B]">{details.ownerName || "-"}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-[#64748B]">Owner Phone</p>
-                  <p className="text-sm font-medium text-[#0F172B]">{details.ownerPhone || "-"}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-[#64748B]">Status</p>
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      details.status === "Active"
-                        ? "bg-[#DCFCE7] text-[#15803D]"
-                        : "bg-[#FEE2E2] text-[#B91C1C]"
-                    }`}
-                  >
-                    {details.status}
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-xs text-[#64748B]">Owner Email</p>
-                  <p className="break-all text-sm font-medium text-[#0F172B]">{details.ownerEmail || "-"}</p>
                 </div>
               </div>
             </Card>
 
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-              <Card className="overflow-hidden border border-[#E2E8F0] bg-white">
-                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Address Details</div>
-                <div className="space-y-3 p-4 text-sm">
-                  <div>
-                    <p className="text-xs text-[#64748B]">Street Address</p>
-                    <p className="font-medium text-[#0F172B]">{details.address.streetAddress || "-"}</p>
+              <Card className="gap-0 overflow-hidden border border-[#E2E8F0] bg-white py-0">
+                <div className="flex items-center gap-2 bg-black px-4 py-5 text-sm font-semibold text-white">
+                  <IconAddressBook className="mr-1 inline h-5.5 w-5.5 text-[#98A2B3]" />
+                  <span>Address Details</span>
+                </div>
+                <div className="space-y-6 p-6 text-sm">
+                  <div className="flex items-start gap-3">
+                    <IconMapPin className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Street Address</p>
+                      <p className="font-medium text-[#0F172B]">{details.address.streetAddress || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">City</p>
-                    <p className="font-medium text-[#0F172B]">{details.address.city || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconBuildingStore className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">City</p>
+                      <p className="font-medium text-[#0F172B]">{details.address.city || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">State</p>
-                    <p className="font-medium text-[#0F172B]">{details.address.state || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconMapPins className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">State</p>
+                      <p className="font-medium text-[#0F172B]">{details.address.state || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Country</p>
-                    <p className="font-medium text-[#0F172B]">{details.address.country || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconWorld className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Country</p>
+                      <p className="font-medium text-[#0F172B]">{details.address.country || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Pin Code</p>
-                    <p className="font-medium text-[#0F172B]">{details.address.pinCode || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconNumber className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Pin Code</p>
+                      <p className="font-medium text-[#0F172B]">{details.address.pinCode || "-"}</p>
+                    </div>
                   </div>
                 </div>
               </Card>
 
-              <Card className="overflow-hidden border border-[#E2E8F0] bg-white">
-                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Bank Details</div>
-                <div className="space-y-3 p-4 text-sm">
-                  <div>
-                    <p className="text-xs text-[#64748B]">Account Number</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.accountNumber || "-"}</p>
+              <Card className="gap-0 overflow-hidden border border-[#E2E8F0] bg-white py-0">
+                <div className="flex items-center gap-2 bg-black px-4 py-5 text-sm font-semibold text-white">
+                  <IconBuildingBank className="mr-1 inline h-5.5 w-5.5 text-[#98A2B3]" />
+                  <span>Bank Details</span>
+                </div>
+                <div className="space-y-6 p-6 text-sm">
+                  <div className="flex items-start gap-3">
+                    <IconBuildingBank className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Account Number</p>
+                      <p className="font-medium text-[#0F172B]">{maskAccountNumber(details.bankDetails.accountNumber)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">IFSC Code</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.ifsc || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconBuildingBank className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">IFSC Code</p>
+                      <p className="font-medium text-[#0F172B]">{details.bankDetails.ifsc || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Bank Name</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.bankName || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconBuildingBank className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Bank Name</p>
+                      <p className="font-medium text-[#0F172B]">{details.bankDetails.bankName || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">UPI ID</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.upiId || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconBuildingBank className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">UPI ID</p>
+                      <p className="font-medium text-[#0F172B]">{details.bankDetails.upiId || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Beneficiary Name</p>
-                    <p className="font-medium text-[#0F172B]">{details.bankDetails.beneficiaryName || "-"}</p>
+                  <div className="flex items-start gap-3">
+                    <IconUser className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <div>
+                      <p className="text-xs text-[#64748B]">Beneficiary Name</p>
+                      <p className="font-medium text-[#0F172B]">{details.bankDetails.beneficiaryName || "-"}</p>
+                    </div>
                   </div>
                 </div>
               </Card>
 
-              <Card className="overflow-hidden border border-[#E2E8F0] bg-white xl:col-span-2">
-                <div className="bg-black px-4 py-3 text-sm font-semibold text-white">Meta Information</div>
-                <div className="grid grid-cols-1 gap-3 p-4 text-sm md:grid-cols-2 xl:grid-cols-3">
-                  <div>
-                    <p className="text-xs text-[#64748B]">Store DB ID</p>
-                    <p className="break-all font-medium text-[#0F172B]">{details.meta.storeDbId || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Store Created At</p>
-                    <p className="font-medium text-[#0F172B]">{formatDate(details.meta.storeCreatedAt)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">Store Updated At</p>
-                    <p className="font-medium text-[#0F172B]">{formatDate(details.meta.storeUpdatedAt)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">User Created At</p>
-                    <p className="font-medium text-[#0F172B]">{formatDate(details.meta.userCreatedAt)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748B]">User Updated At</p>
-                    <p className="font-medium text-[#0F172B]">{formatDate(details.meta.userUpdatedAt)}</p>
-                  </div>
-                </div>
-              </Card>
+           
             </div>
           </div>
         )}
