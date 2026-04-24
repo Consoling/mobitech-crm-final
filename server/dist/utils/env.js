@@ -17,4 +17,7 @@ exports.SYS_ENV = {
     FRONTEND_URLS: process.env.FRONTEND_URLS?.split(',').map(url => url.trim()) || ["http://localhost:5173"],
     IMEI_CHECK_API_KEY: process.env.IMEI_CHECK_API_KEY,
     IMEI_CHECK_SERVICE: process.env.IMEI_CHECK_SERVICE || "11",
+    AWS_REGION: process.env.MB_S3_REGION,
+    AWS_S3_BUCKET_NAME: process.env.MB_S3_BUCKET_NAME,
+    AWS_S3_PRESIGNED_URL_EXPIRES_IN_SECONDS: Number(process.env.MB_S3_PRESIGNED_URL_EXPIRES_IN_SECONDS || 900),
 };

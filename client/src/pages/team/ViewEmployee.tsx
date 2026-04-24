@@ -1,10 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import idCardTop from "@/assets/id-card-assets/id-card-top.png";
+import idCardBottom from "@/assets/id-card-assets/id-card-bottom.png";
+import idCardBottomBack from "@/assets/id-card-assets/id-card-bottom-back.png";
+import mobitechCRMtext from "@/assets/id-card-assets/mobitech-crm.png";
+import idCardBack from "@/assets/id-card-assets/id-card-back.png";
+import idCardLogo from "@/assets/id-card-assets/id-card-logo.png";
 import { apiJson } from "@/lib/api";
 import { IconAddressBook, IconBuildingBank, IconBuildingStore, IconCalendar, IconCoinRupee, IconFile, IconId, IconIdBadge, IconIdBadge2, IconLogin2, IconPhone, IconRefresh, IconSticker2, IconUser, IconUserCircle, IconWallet, IconWorldMap } from "@tabler/icons-react";
-import { Download, Eye, Loader2, UsersRound } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Download, Eye, Loader2, UsersRound } from "lucide-react";
+import * as bwipjs from "bwip-js";
+import html2canvas from "html2canvas";
+import React, { useEffect, useMemo, useState } from "react";
+import { useRef } from "react";
+import { useParams } from "react-router-dom";
 
 type EmployeeDetailsResponse = {
   data: {
@@ -75,6 +86,120 @@ const ViewEmployee = () => {
   const [details, setDetails] = useState<EmployeeDetailsResponse["data"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isIdCardOpen, setIsIdCardOpen] = useState(false);
+  const [idCardAvatarSrc, setIdCardAvatarSrc] = useState<string | undefined>(undefined);
+  const idCardRef = useRef<HTMLDivElement | null>(null);
+
+  const idCardBarcodeSvg = useMemo(() => {
+    if (!details?.employeeId) {
+      return "";
+    }
+
+    try {
+      return bwipjs.toSVG({
+        bcid: "code128",
+        text: details.employeeId,
+        scale: 2,
+        height: 10,
+        includetext: false,
+        backgroundcolor: "FFFFFF",
+        paddingheight: 0,
+        paddingwidth: 0,
+      });
+    } catch (error) {
+      console.error("Failed to render employee barcode:", error);
+      return "";
+    }
+  }, [details?.employeeId]);
+
+  const idCardBarcodeDataUrl = useMemo(() => {
+    if (!idCardBarcodeSvg) {
+      return "";
+    }
+
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(idCardBarcodeSvg)}`;
+  }, [idCardBarcodeSvg]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadAvatarAsDataUrl = async () => {
+      const avatarUrl = details?.avatar?.url;
+
+      if (!avatarUrl) {
+        setIdCardAvatarSrc(undefined);
+        return;
+      }
+
+      try {
+        const response = await fetch(avatarUrl, { mode: "cors" });
+        if (!response.ok) {
+          throw new Error(`Avatar fetch failed with status ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const reader = new FileReader();
+
+        reader.onloadend = () => {
+          if (isActive) {
+            setIdCardAvatarSrc(typeof reader.result === "string" ? reader.result : avatarUrl);
+          }
+        };
+
+        reader.onerror = () => {
+          if (isActive) {
+            setIdCardAvatarSrc(avatarUrl);
+          }
+        };
+
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error("Failed to convert avatar for ID card:", error);
+        if (isActive) {
+          setIdCardAvatarSrc(avatarUrl);
+        }
+      }
+    };
+
+    void loadAvatarAsDataUrl();
+
+    return () => {
+      isActive = false;
+    };
+  }, [details?.avatar?.url]);
+
+  const downloadIdCard = async () => {
+    if (!details || !idCardRef.current) {
+      return;
+    }
+
+    try {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+      const capture = await html2canvas(idCardRef.current, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      const blob = await new Promise<Blob | null>((resolve) => capture.toBlob(resolve, "image/png"));
+      if (!blob) {
+        throw new Error("Unable to create PNG blob from ID card capture");
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = blobUrl;
+      downloadLink.download = `${details.employeeId || "employee"}-id-card.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (error) {
+      console.error("Failed to download ID card:", error);
+    }
+  };
 
   useEffect(() => {
     let isActive = true;
@@ -124,7 +249,7 @@ const ViewEmployee = () => {
       isActive = false;
     };
   }, [employeeID]);
-
+console.log("Employee details state:", details, "Loading:", isLoading, "Error:", errorMessage);
   return (
     <div className="px-6 py-6">
       <div className="mb-6 flex items-center justify-between gap-4 max-[550px]:flex-col max-[550px]:items-start">
@@ -175,9 +300,12 @@ const ViewEmployee = () => {
               <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
                 <div className="border-b border-[#E2E8F0] px-6 py-6 md:border-b-0 md:border-r">
                   <div className="flex items-center gap-4 md:flex-col md:items-start">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-[200px] bg-[#F1F5F9] text-xl font-semibold text-[#334155]">
-                      {details.name.charAt(0).toUpperCase()}
-                    </div>
+                    <Avatar className="h-16 w-16 rounded-[200px]">
+                      <AvatarImage src={details.avatar?.url ?? undefined} alt={details.name} />
+                      <AvatarFallback className="bg-[#F1F5F9] text-xl font-semibold text-[#334155]">
+                        {details.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <p className="text-base font-semibold text-[#101928]">{details.name}</p>
                       <p className="text-sm mt-1 text-[#475367] font-normal">EMP. ID: {details.employeeId}</p>
@@ -222,15 +350,14 @@ const ViewEmployee = () => {
 
                     <div className="inline-flex flex-col items-start gap-1.5">
                       <p className="text-sm text-[#475367]">ID Card</p>
-                     <Link
-                          to={''}
-                          target="_blank"
-                          rel="noreferrer"
+                     <Button
+                          variant='outline'
+                          onClick={() => setIsIdCardOpen(true)}
                           className="inline-flex items-center rounded-2xl border border-[#D0D5DD] px-4 py-2 text-sm font-medium text-[#101928] hover:bg-[#F8FAFC]"
                         >
                           <Eye className="mr-2 h-4 w-4" />
                           View ID Card
-                        </Link>
+                        </Button>
                     </div>
                   </div>
                 </div>
@@ -414,6 +541,124 @@ const ViewEmployee = () => {
           </div>
         )}
       </div>
+
+      <Dialog open={isIdCardOpen} onOpenChange={setIsIdCardOpen}>
+        <DialogContent showCloseButton={false} className="max-w-190 rounded-[28px] border border-[#D0D5DD] bg-[#F8FAFC] p-5 sm:p-6">
+          <DialogTitle className="text-center text-[28px] font-medium text-[#101928] sm:text-[32px]">ID Card</DialogTitle>
+
+          <div className="mt-2 rounded-[22px] border border-[#D0D5DD] bg-[#EFF2F6] p-4 sm:p-6">
+            <div ref={idCardRef} data-id-card-export="true" className="relative mx-auto w-51 h-80.5 overflow-hidden rounded-[14px] bg-white shadow-sm">
+              <img
+                src={idCardBack}
+                alt="ID card background"
+                className="absolute top-1.5 object-cover"
+              />
+              <img
+                src={idCardTop}
+                alt="ID card top artwork"
+                className="absolute left-0 top-0 h-28.75 w-full object-cover"
+              />
+              <img
+                src={idCardBottomBack}
+                alt="ID card bottom artwork"
+                className="absolute bottom-1 left-0 h-auto w-full object-cover"
+              />
+              <img
+                src={idCardBottom}
+                alt="ID card bottom artwork"
+                className="absolute bottom-0 left-0 h-auto w-full object-cover"
+              />
+
+              <div className="relative z-10 flex min-h-80.5 flex-col px-4 pb-4 pt-3">
+                <div className="flex-col items-center  flex gap-1">
+                  <img src={idCardLogo} alt="Mobitech logo" className="h-5.5 w-6.75 object-contain" />
+                  <img src={mobitechCRMtext} alt="Mobitech CRM" className="h-[28.37px] w-[82.47px] object-contain" />
+                </div>
+
+                <div className=" flex justify-center" style={{ marginTop: "6px" }}>
+                  <Avatar className="h-20 w-20 border-4 border-[#F79009] bg-white">
+                    <AvatarImage src={idCardAvatarSrc ?? details?.avatar?.url ?? undefined} alt={details?.name ?? "Employee"} />
+                    <AvatarFallback className="bg-[#F1F5F9] text-xl font-semibold text-[#334155]">
+                      {details?.name?.charAt(0).toUpperCase() ?? "E"}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+
+                <div className="mt-5 text-center">
+                  <p className="text-[10px] font-semibold text-[#F19118]">{details?.position || "-"}</p>
+                </div>
+
+                <div className="space-y-0.5 text-left text-[8px] leading-tight text-[#000000]" style={{ marginTop: "12px" }}>
+                  <div className="grid grid-cols-[38px_1fr] items-center gap-0">
+                    <p className="text-left font-semibold uppercase text-[#F19118]">ID NO</p>
+                    <p className="text-left">: {details?.employeeId || "-"}</p>
+                  </div>
+                  <div className="grid grid-cols-[38px_1fr] items-center gap-0">
+                    <p className="text-left font-semibold uppercase text-[#F19118]">DOB</p>
+                    <p className="text-left">: DD/MM/YEAR</p>
+                  </div>
+                  <div className="grid grid-cols-[38px_1fr] items-center gap-0">
+                    <p className="text-left font-semibold uppercase text-[#F19118]">Blood</p>
+                    <p className="text-left">: A+</p>
+                  </div>
+                  <div className="grid grid-cols-[38px_1fr] items-center gap-0">
+                    <p className="text-left font-semibold uppercase text-[#F19118]">Phone</p>
+                    <p className="text-left">: {details?.phone || "-"}</p>
+                  </div>
+                  <div className="grid grid-cols-[38px_1fr] items-center gap-0">
+                    <p className="text-left font-semibold uppercase tracking-wide text-[#F19118]">E-mail</p>
+                    <p className="text-left break-all">: {details?.email || "-"}</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-center pb-2" style={{ marginTop: "auto" }}>
+                  {idCardBarcodeDataUrl ? (
+                    <img
+                      src={idCardBarcodeDataUrl}
+                      alt={`Barcode for employee ID ${details?.employeeId || ""}`}
+                      className="h-5 w-31 max-w-35 object-contain"
+                    />
+                  ) : (
+                    <div className="flex min-h-13 w-full max-w-35 items-center justify-center rounded-sm bg-white px-1 text-[9px] text-[#64748B]">
+                      Barcode unavailable
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-center gap-4">
+              <Button variant="outline" size="icon" className="h-12 w-12 rounded-full border-[#D0D5DD] bg-white text-[#98A2B3]" disabled>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-12 w-12 rounded-full border-[#D0D5DD] bg-white text-[#98A2B3]" disabled>
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Button
+              onClick={() => setIsIdCardOpen(false)}
+              className="h-10 rounded-full bg-black text-lg font-medium text-white hover:bg-[#111111]"
+            >
+              <ArrowLeft className="ml-1 h-5 w-5" />
+              Go Back
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                void downloadIdCard();
+              }}
+              className="h-10 rounded-full border border-[#667085] bg-[#F8FAFC] text-lg font-medium text-[#101928] hover:bg-[#EEF2F7]"
+            >
+              <Download className="h-5 w-5" />
+              Download ID Card
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

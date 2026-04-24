@@ -25,6 +25,10 @@ type EmployeeListResponse = {
     createdAt: string;
     role: string;
     status: "Active" | "Inactive";
+    avatar: {
+      url?: string;
+      key?: string;
+    };
   }>;
 };
 
@@ -45,6 +49,7 @@ type TeamTableData = {
   employees: Array<{
     id: string | number;
     view: string;
+    avatarUrl: string | null;
     name: string;
     email: string;
     employeeId: string;
@@ -124,6 +129,7 @@ const ManageTeam = () => {
         const employees = (employeesResult.data?.items ?? []).map((employee) => ({
           id: employee.id,
           view: "view",
+          avatarUrl: employee.avatar?.url ?? employee.avatar?.key ?? null,
           name: employee.name,
           email: employee.email ?? "-",
           employeeId: employee.employeeId ?? "-",

@@ -25,6 +25,10 @@ type EmployeeListResponse = {
     createdAt: string;
     role: string;
     status: "Active" | "Inactive";
+    avatar: {
+      url?: string;
+      key?: string;
+    };
   }>;
 };
 
@@ -52,6 +56,7 @@ type TeamTableData = {
     createdAt: string;
     role: string;
     status: string;
+    avatarUrl: string | null;
   }>;
   stores: Array<{
     id: string | number;
@@ -131,6 +136,7 @@ const TeamDashboard = () => {
           createdAt: employee.createdAt,
           role: employee.role,
           status: employee.status,
+          avatarUrl: employee.avatar?.url ?? employee.avatar?.key ?? null,
         }));
 
         const stores = (storesResult.data?.items ?? []).map((store) => ({

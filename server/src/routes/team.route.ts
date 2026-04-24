@@ -1,8 +1,11 @@
 import crypto from "crypto";
 import express, { Request, Response } from "express";
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { prisma } from "../config/prisma";
 import { redisClient } from "../config/redis";
 import { Role, UserStatus } from "../generated/prisma/enums";
+import { SYS_ENV } from "../utils/env";
 const router = express.Router();
 
 const DEFAULT_PAGE = 1;
@@ -38,6 +41,13 @@ const EMPLOYEE_DB_ROLES: Role[] = [
 ];
 
 const CDN_BASE_URL = process.env.CDN_BASE_URL?.replace(/\/$/, "") ?? "";
+const S3_BUCKET_NAME = SYS_ENV.AWS_S3_BUCKET_NAME?.trim() ?? "";
+const S3_REGION = SYS_ENV.AWS_REGION?.trim() ?? "";
+const S3_PRESIGNED_URL_EXPIRES_IN_SECONDS = Number.isFinite(SYS_ENV.AWS_S3_PRESIGNED_URL_EXPIRES_IN_SECONDS)
+	? Math.max(60, SYS_ENV.AWS_S3_PRESIGNED_URL_EXPIRES_IN_SECONDS)
+	: 900;
+
+const s3Client = S3_REGION ? new S3Client({ region: S3_REGION }) : null;
 
 const parseStringArray = (input: unknown): string[] => {
 	if (Array.isArray(input)) {
@@ -175,9 +185,29 @@ const getEmployeeId = (user: {
 	);
 };
 
-const getImagePayload = (key: string | null) => {
+const getImagePayload = async (key: string | null) => {
 	if (!key) {
 		return null;
+	}
+
+	if (s3Client && S3_BUCKET_NAME) {
+		try {
+			const url = await getSignedUrl(
+				s3Client,
+				new GetObjectCommand({
+					Bucket: S3_BUCKET_NAME,
+					Key: key,
+				}),
+				{ expiresIn: S3_PRESIGNED_URL_EXPIRES_IN_SECONDS },
+			);
+
+			return {
+				key,
+				url,
+			};
+		} catch (error) {
+			console.error("team image url signing error:", error);
+		}
 	}
 
 	return {
@@ -378,6 +408,8 @@ router.get("/employees", async (req: Request, res: Response) => {
 					role: true,
 					status: true,
 					isAdmin: true,
+					dateOfBirth: true,
+					dateOfTermination: true,
 					profileImage: true,
 					admin: { select: { firstName: true, lastName: true, employeeId: true } },
 					manager: { select: { firstName: true, lastName: true, employeeId: true } },
@@ -416,7 +448,7 @@ router.get("/employees", async (req: Request, res: Response) => {
 		};
 
 		const payload = {
-			items: users.map((user) => ({
+			items: await Promise.all(users.map(async (user) => ({
 				id: user.id,
 				name: getDisplayName(user),
 				email: user.email,
@@ -425,8 +457,8 @@ router.get("/employees", async (req: Request, res: Response) => {
 				createdAt: user.createdAt,
 				role: toUiRole(user.role, user.isAdmin),
 				status: toUiStatus(user.status),
-				avatar: getImagePayload(user.profileImage),
-			})),
+				avatar: await getImagePayload(user.profileImage),
+			}))),
 			meta: {
 				page,
 				limit,
@@ -491,6 +523,8 @@ router.get("/employees/:employeeID", async (req: Request, res: Response) => {
 				payoutDate: true,
 				storeId: true,
 				createdBy: true,
+				dateOfBirth: true,
+				
 				dateOfJoining: true,
 				dateOfTermination: true,
 				createdAt: true,
@@ -592,6 +626,13 @@ router.get("/employees/:employeeID", async (req: Request, res: Response) => {
 			user.salesExecutive?.aadharId ??
 			null;
 
+		const [avatar, aadharFront, aadharBack, qualification] = await Promise.all([
+			getImagePayload(user.profileImage),
+			getImagePayload(user.aadharFrontImage),
+			getImagePayload(user.aadharBackImage),
+			getImagePayload(user.qualificationImage),
+		]);
+
 		const payload = {
 			data: {
 				employeeId,
@@ -600,7 +641,7 @@ router.get("/employees/:employeeID", async (req: Request, res: Response) => {
 				status: toUiStatus(user.status),
 				email: user.email,
 				phone: user.phone,
-				avatar: getImagePayload(user.profileImage),
+				avatar,
 				personalDetails: {
 					firstName: profile?.firstName ?? null,
 					lastName: profile?.lastName ?? null,
@@ -624,9 +665,9 @@ router.get("/employees/:employeeID", async (req: Request, res: Response) => {
 					upiId: bankDetails?.upiId ?? null,
 				},
 				documents: {
-					aadharFront: getImagePayload(user.aadharFrontImage),
-					aadharBack: getImagePayload(user.aadharBackImage),
-					qualification: getImagePayload(user.qualificationImage),
+					aadharFront,
+					aadharBack,
+					qualification,
 					agreement: null,
 				},
 			},
@@ -739,7 +780,7 @@ router.get("/stores", async (req: Request, res: Response) => {
 		]);
 
 		const payload = {
-			items: stores.map((store) => ({
+			items: await Promise.all(stores.map(async (store) => ({
 				id: store.userId,
 				ownerName: store.ownerName,
 				storeId: store.storeId,
@@ -758,8 +799,8 @@ router.get("/stores", async (req: Request, res: Response) => {
 					: null,
 				createdAt: store.createdAt,
 				status: toUiStatus(store.user?.status ?? UserStatus.ACTIVE),
-				avatar: getImagePayload(store.user?.profileImage ?? null),
-			})),
+				avatar: await getImagePayload(store.user?.profileImage ?? null),
+			}))),
 			meta: {
 				page,
 				limit,
@@ -834,6 +875,8 @@ router.get("/stores/:storeID", async (req: Request, res: Response) => {
 			return res.status(404).json({ message: "Store not found" });
 		}
 
+		const avatar = await getImagePayload(store.user?.profileImage ?? null);
+
 		const payload = {
 			data: {
 				storeId: store.storeId,
@@ -842,7 +885,7 @@ router.get("/stores/:storeID", async (req: Request, res: Response) => {
 				ownerPhone: store.ownerPhone,
 				ownerEmail: store.ownerEmail,
 				status: toUiStatus(store.user?.status ?? UserStatus.ACTIVE),
-				avatar: getImagePayload(store.user?.profileImage ?? null),
+				avatar,
 				address: {
 					streetAddress: store.address?.streetAddress ?? null,
 					city: store.address?.city ?? null,

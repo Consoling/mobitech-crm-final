@@ -12,7 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Role = exports.UserStatus = void 0;
 exports.UserStatus = {
     ACTIVE: 'ACTIVE',
-    INACTIVE: 'INACTIVE'
+    INACTIVE: 'INACTIVE',
+    TERMINATED: 'TERMINATED'
 };
 exports.Role = {
     ADMIN: 'ADMIN',

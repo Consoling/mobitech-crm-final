@@ -28,7 +28,7 @@ import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { z } from "zod";
 
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -92,6 +92,7 @@ export const schema = z.object({
   createdAt: z.string(),
   role: z.string(),
   status: z.string(),
+  avatarUrl: z.string().nullable(),
 });
 
 export const storeSchema = z.object({
@@ -271,6 +272,8 @@ const createEmployeeColumns = (
     cell: ({ row }) => (
       <div className="flex items-center gap-3 h-14.5">
         <Avatar size="default">
+            <AvatarImage src={row.original.avatarUrl ?? ""} />
+      
           <AvatarFallback className="bg-[#E5E7EB] text-[#344054] font-medium">
             {row.original.name.charAt(0).toUpperCase()}
           </AvatarFallback>
@@ -570,6 +573,8 @@ export function EmployeeDataTable({
   data: { employees: z.infer<typeof schema>[]; stores: z.infer<typeof storeSchema>[] };
   onTabChange?: (tab: "employees" | "stores") => void;
 }) {
+
+  
   const navigate = useNavigate();
   const employeeColumns = React.useMemo(
     () => createEmployeeColumns(navigate),
