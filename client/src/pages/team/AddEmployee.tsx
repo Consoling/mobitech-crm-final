@@ -14,8 +14,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Check, ChevronsUpDown, Upload, UsersRound } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  CalendarIcon,
+  Check,
+  ChevronsUpDown,
+  Loader2,
+  Upload,
+  UsersRound,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import toast from "react-hot-toast";
@@ -35,6 +42,15 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { apiJson, jsonHeaders } from "@/lib/api";
+import { useDebounce } from "@/hooks/useDebounce";
+import AadharVerifyDialog from "./components/aadhar-verify";
+import { BANK_NAMES } from "@/constants/const";
 
 const addEmployeeSchema = z.object({
   storeId: z.string().optional(),
@@ -48,11 +64,14 @@ const addEmployeeSchema = z.object({
   aadharFront: z.any().optional(),
   aadharBack: z.any().optional(),
   aadharNumber: z.string().optional(),
+  aadharData: z.object({}).optional(),
+  isAadharVerified: z.boolean().optional(),
   paymentType: z.string().min(1, "Payment type is required"),
   bankName: z.string().optional(),
   ifscCode: z.string().optional(),
   accountNumber: z.string().optional(),
   beneficiaryName: z.string().optional(),
+  contractDocument: z.any().optional(),
   qualificationDocument: z.any().optional(),
   vehicleImageFront: z.any().optional(),
   vehicleImageBack: z.any().optional(),
@@ -60,6 +79,15 @@ const addEmployeeSchema = z.object({
   salary: z.string().optional(),
   incentive: z.string().optional(),
   payoutDate: z.string().optional(),
+  isPhoneVerified: z.boolean().optional(),
+  upiId: z
+    .string()
+    .optional()
+    .refine((value) => !value || /^[^\s@]+@[^\s@]+$/.test(value.trim()), {
+      message: "Please enter a valid UPI ID like name@bank",
+    }),
+  isUpiVerified: z.boolean().optional(),
+  isBankVerified: z.boolean().optional(),
 });
 
 type AddEmployeeFormValues = z.infer<typeof addEmployeeSchema>;
@@ -76,18 +104,33 @@ const AddEmployee = () => {
     useState("No file chosen");
   const [selectedQualificationFileName, setSelectedQualificationFileName] =
     useState("No file chosen");
+  const [selectedContractFileName, setSelectedContractFileName] =
+    useState("No file chosen");
   const [selectedVehicleImageFrontName, setSelectedVehicleImageFrontName] =
     useState("No file chosen");
   const [selectedVehicleImageBackName, setSelectedVehicleImageBackName] =
     useState("No file chosen");
   const [isStoreComboboxOpen, setIsStoreComboboxOpen] = useState(false);
   const [storeSearch, setStoreSearch] = useState("");
+  const [storeOptions, setStoreOptions] = useState<
+    Array<{ label: string; value: string }>
+  >([]);
+  const [isStoreOptionsLoading, setIsStoreOptionsLoading] = useState(false);
   const [isBankComboboxOpen, setIsBankComboboxOpen] = useState(false);
   const [bankSearch, setBankSearch] = useState("");
   const [beneficiaryName, setBeneficiaryName] = useState("");
   const [step, setStep] = useState(1);
   const [openPhoneVerifyDialog, setOpenPhoneVerifyDialog] = useState(false);
   const [aadharVerifyDialogOpen, setAadharVerifyDialogOpen] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [isOtpInvalid, setIsOtpInvalid] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [aadharData, setAadharData] = useState<any>(null);
+  const [isVerifyingUpi, setIsVerifyingUpi] = useState(false);
+  const [isVerifyingBank, setIsVerifyingBank] = useState(false);
   const form = useForm<AddEmployeeFormValues>({
     resolver: zodResolver(addEmployeeSchema),
     defaultValues: {
@@ -108,26 +151,26 @@ const AddEmployee = () => {
       accountNumber: "",
       beneficiaryName: "",
       qualificationDocument: undefined,
+      contractDocument: undefined,
       vehicleImageFront: undefined,
       vehicleImageBack: undefined,
       dateOfJoining: "",
       salary: "",
       incentive: "",
       payoutDate: "",
+      isPhoneVerified: false,
+      aadharData: {},
+      isAadharVerified: false,
+      upiId: "",
+      isUpiVerified: false,
+      isBankVerified: false,
     },
   });
 
-  const storeOptions = useMemo(
-    () => [
-      { label: "Store 101", value: "store-101" },
-      { label: "Store 102", value: "store-102" },
-      { label: "Store 103", value: "store-103" },
-    ],
-    [],
-  );
+  const debouncedStoreSearch = useDebounce(storeSearch, 300);
 
   const filteredStoreOptions = useMemo(() => {
-    const query = storeSearch.trim().toLowerCase();
+    const query = debouncedStoreSearch.trim().toLowerCase();
     if (!query) {
       return storeOptions;
     }
@@ -136,81 +179,6 @@ const AddEmployee = () => {
       option.label.toLowerCase().includes(query),
     );
   }, [storeOptions, storeSearch]);
-
-  const BANK_NAMES = [
-    "AIRTEL PAYMENTS BANK",
-    "AU SMALL FINANCE BANK",
-    "AXIS BANK",
-    "BANDHAN BANK",
-    "BANK OF BARODA",
-    "BANK OF INDIA",
-    "BANK OF MAHARASHTRA",
-    "CANARA BANK",
-    "CATHOLIC SYRIAN BANK",
-    "CENTRAL BANK OF INDIA",
-    "CITY UNION BANK",
-    "CSB BANK",
-    "DCB BANK",
-    "DHANLAXMI BANK",
-    "EQUITAS SMALL FINANCE BANK",
-    "FEDERAL BANK",
-    "HDFC BANK",
-    "ICICI BANK",
-    "IDBI BANK",
-    "IDFC FIRST BANK",
-    "INDIA POST PAYMENTS BANK",
-    "INDIAN BANK",
-    "INDIAN OVERSEAS BANK",
-    "INDUSIND BANK",
-    "JANA SMALL FINANCE BANK",
-    "KARNATAKA BANK",
-    "KARUR VYSYA BANK",
-    "KOTAK MAHINDRA BANK",
-    "LAKSHMI VILAS BANK",
-    "MEHSANA URBAN CO-OPERATIVE BANK",
-    "NKGSB CO-OPERATIVE BANK",
-    "PAYTM PAYMENTS BANK",
-    "PUNJAB & SIND BANK",
-    "PUNJAB NATIONAL BANK",
-    "RBL BANK",
-    "SARASWAT CO-OPERATIVE BANK",
-    "SHAMRAO VITHAL CO-OPERATIVE BANK",
-    "SOUTH INDIAN BANK",
-    "STATE BANK OF INDIA",
-    "SURYODAY SMALL FINANCE BANK",
-    "TAMILNAD MERCANTILE BANK",
-    "THE GUJARAT STATE CO-OPERATIVE BANK",
-    "THE HALOL MERCANTILE CO-OPERATIVE BANK",
-    "THE HOWRAH DISTRICT CENTRAL CO-OPERATIVE BANK",
-    "THE JALGAON DISTRICT CENTRAL CO-OPERATIVE BANK",
-    "THE KARNATAKA STATE CO-OPERATIVE APEX BANK",
-    "THE MADURAI DISTRICT CENTRAL CO-OPERATIVE BANK",
-    "THE MAGADH CENTRAL CO-OPERATIVE BANK",
-    "THE MAHENDRAGARH CENTRAL CO-OPERATIVE BANK",
-    "THE MAHOBA URBAN CO-OPERATIVE BANK",
-    "THE MATTANCHERRY SARVAJANIK CO-OPERATIVE BANK",
-    "THE MEENACHIL EAST URBAN CO-OPERATIVE BANK",
-    "THE MUMBAI DISTRICT CENTRAL CO-OPERATIVE BANK",
-    "THE MUZAFFARPUR CENTRAL CO-OPERATIVE BANK",
-    "THE NAGPUR DISTRICT CENTRAL CO-OPERATIVE BANK",
-    "THE NANDED DISTRICT CENTRAL CO-OPERATIVE BANK",
-    "THE NATIONAL CO-OPERATIVE BANK",
-    "THE NAVAL DOCKYARD CO-OPERATIVE BANK",
-    "THE NAWANSHAHR CENTRAL CO-OPERATIVE BANK",
-    "THE NILAMBUR CO-OPERATIVE URBAN BANK",
-    "THE NILGIRIS DISTRICT CENTRAL CO-OPERATIVE BANK",
-    "THE RAJASTHAN STATE CO-OPERATIVE BANK",
-    "THE TAMILNADU STATE APEX CO-OPERATIVE BANK",
-    "THE THIRUVANNAMALAI DISTRICT CENTRAL CO-OPERATIVE BANK",
-    "THE VIRUDHUNAGAR DISTRICT CENTRAL CO-OPERATIVE BANK",
-    "THE VISAKHAPATNAM CO-OPERATIVE BANK",
-    "THE WEST BENGAL STATE CO-OPERATIVE BANK",
-    "UCO BANK",
-    "UJJIVAN SMALL FINANCE BANK",
-    "UNION BANK OF INDIA",
-    "VASAI JANATA SAHAKARI BANK",
-    "YES BANK",
-  ];
 
   const bankOptions = useMemo(
     () =>
@@ -234,6 +202,100 @@ const AddEmployee = () => {
 
   const onSubmit = (values: AddEmployeeFormValues) => {
     console.log("Add employee form values:", values);
+  };
+
+  useEffect(() => {
+    if (!isStoreComboboxOpen || storeOptions.length > 0) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadStoreOptions = async () => {
+      setIsStoreOptionsLoading(true);
+      try {
+        const { response, data } = await apiJson<{
+          items?: Array<{ label: string; value: string }>;
+        }>("/team/stores/options", {
+          method: "GET",
+          headers: jsonHeaders,
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        if (isMounted) {
+          setStoreOptions(Array.isArray(data?.items) ? data.items : []);
+        }
+      } catch {
+        if (isMounted) {
+          setStoreOptions([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsStoreOptionsLoading(false);
+        }
+      }
+    };
+
+    void loadStoreOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isStoreComboboxOpen, storeOptions.length]);
+
+  useEffect(() => {
+    if (!openPhoneVerifyDialog || resendCountdown <= 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setResendCountdown((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [openPhoneVerifyDialog, resendCountdown]);
+
+  useEffect(() => {
+    if (!openPhoneVerifyDialog) {
+      setOtpValue("");
+      setIsOtpInvalid(false);
+      setIsVerifyingOtp(false);
+    }
+  }, [openPhoneVerifyDialog]);
+
+  useEffect(() => {
+    if (!isOtpInvalid) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setIsOtpInvalid(false);
+    }, 600);
+
+    return () => window.clearTimeout(timeout);
+  }, [isOtpInvalid]);
+
+  const handleAadharVerification = (status: "pass" | "fail") => {
+    if (status === "pass") {
+      form.setValue("aadharData", aadharData);
+      form.setValue("isAadharVerified", true);
+      toast.success("Aadhar verified successfully.");
+      setAadharVerifyDialogOpen(false);
+    } else {
+      form.setValue("aadharData", {});
+      form.setValue("isAadharVerified", false);
+      toast.error("Aadhar verification failed.");
+      setAadharVerifyDialogOpen(false);
+    }
   };
 
   return (
@@ -344,7 +406,11 @@ const AddEmployee = () => {
                                   )}
                                 </button>
 
-                                {filteredStoreOptions.length > 0 ? (
+                                {isStoreOptionsLoading ? (
+                                  <p className="px-3 py-2 text-sm text-[#98A2B3]">
+                                    Loading stores...
+                                  </p>
+                                ) : filteredStoreOptions.length > 0 ? (
                                   filteredStoreOptions.map((option) => (
                                     <button
                                       key={option.value}
@@ -403,6 +469,12 @@ const AddEmployee = () => {
                                 </p>
                               </div>
                               <Button
+                                ref={field.ref}
+                                onClick={() => {
+                                  document
+                                    .getElementById("employee-profile-picture")
+                                    ?.click();
+                                }}
                                 type="button"
                                 className="h-9 w-full rounded-[10px] bg-[#336AEA] px-6 text-white hover:bg-[#2958CA] sm:w-auto"
                               >
@@ -511,6 +583,7 @@ const AddEmployee = () => {
                               placeholder="Enter 10-digit phone number"
                               inputMode="numeric"
                               maxLength={10}
+                              readOnly={form.watch("isPhoneVerified")}
                               className="h-full flex-1 border-0 p-0 text-base text-[#101828] shadow-none placeholder:text-[#98A2B3] focus-visible:ring-0"
                               onChange={(event) => {
                                 const digitsOnly = event.target.value.replace(
@@ -518,22 +591,80 @@ const AddEmployee = () => {
                                   "",
                                 );
                                 field.onChange(digitsOnly);
+                                if (form.getValues("isPhoneVerified")) {
+                                  form.setValue("isPhoneVerified", false);
+                                }
                               }}
                             />
 
                             <Button
                               type="button"
-                              onClick={() => {
+                              disabled={
+                                isSendingOtp || form.watch("isPhoneVerified")
+                              }
+                              onClick={async () => {
+                                if (form.getValues("isPhoneVerified")) {
+                                  return;
+                                }
+
                                 let phone = form.getValues().phone;
                                 if (phone.length < 10) {
                                   toast.error(
                                     `Please enter a valid phone number`,
                                   );
-                                } else setOpenPhoneVerifyDialog(true);
+                                } else {
+                                  setIsSendingOtp(true);
+                                  try {
+                                    const { response, data } = await apiJson<{
+                                      success?: boolean;
+                                      message?: string;
+                                      error?: string;
+                                      medium?: "whatsapp" | "sms";
+                                    }>("/team/add-employee/send-otp", {
+                                      method: "POST",
+                                      headers: jsonHeaders,
+                                      body: JSON.stringify({
+                                        identifier: phone,
+                                      }),
+                                    });
+
+                                    if (!response.ok || !data?.success) {
+                                      toast.error(
+                                        data?.message ??
+                                          data?.error ??
+                                          "Failed to send OTP. Please try again.",
+                                      );
+                                      return;
+                                    }
+
+                                    toast.success(
+                                      data.message ?? "OTP sent successfully.",
+                                    );
+                                    setResendCountdown(30);
+                                    setOtpValue("");
+                                    setIsOtpInvalid(false);
+                                    setOpenPhoneVerifyDialog(true);
+                                  } catch (error) {
+                                    toast.error(
+                                      "Unable to send OTP right now. Please try again.",
+                                    );
+                                  } finally {
+                                    setIsSendingOtp(false);
+                                  }
+                                }
                               }}
                               className="h-9 rounded-[10px] border border-[#33ea5b] bg-[#00C950] px-4 text-sm font-semibold text-white hover:bg-[#29ca4c]"
                             >
-                              Verify
+                              {isSendingOtp ? (
+                                <span className="inline-flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Sending...
+                                </span>
+                              ) : form.watch("isPhoneVerified") ? (
+                                "Verified"
+                              ) : (
+                                "Verify"
+                              )}
                             </Button>
                           </div>
                         </FormControl>
@@ -546,7 +677,7 @@ const AddEmployee = () => {
                     open={openPhoneVerifyDialog}
                     onOpenChange={setOpenPhoneVerifyDialog}
                   >
-                    <DialogContent className="sm:max-w-139.5 sm:max-h-97 rounded-[10px] gap-8">
+                    <DialogContent className="sm:max-w-139.5 sm:max-h-99 rounded-[10px] gap-8">
                       <DialogHeader>
                         <DialogTitle className="text-2xl font-semibold text-[#1A1A21] text-center">
                           Mobile No. Verification
@@ -558,46 +689,153 @@ const AddEmployee = () => {
                       </DialogHeader>
 
                       <div className="flex flex-col w-123.25 items-center gap-5">
-                        <div className=" flex  gap-3 justify-center">
-                          <Input
-                            placeholder=""
-                            className="h-16.75 w-17 rounded-[6px] border border-[#D0D5DD] p-4"
-                          />
-                          <Input
-                            placeholder=""
-                            className="h-16.75 w-17 rounded-[6px] border border-[#D0D5DD] p-4"
-                          />
-                          <Input
-                            placeholder=""
-                            className="h-16.75 w-17 rounded-[6px] border border-[#D0D5DD] p-4"
-                          />
-                          <Input
-                            placeholder=""
-                            className="h-16.75 w-17 rounded-[6px] border border-[#D0D5DD] p-4"
-                          />
-                          <Input
-                            placeholder=""
-                            className="h-16.75 w-17 rounded-[6px] border border-[#D0D5DD] p-4"
-                          />
-                          <Input
-                            placeholder=""
-                            className="h-16.75 w-17 rounded-[6px] border border-[#D0D5DD] p-4"
-                          />
+                        <div
+                          className={`flex justify-center ${isOtpInvalid ? "otp-shake" : ""}`}
+                        >
+                          <InputOTP
+                            maxLength={6}
+                            value={otpValue}
+                            onChange={(value) => {
+                              setOtpValue(value);
+                              if (isOtpInvalid) {
+                                setIsOtpInvalid(false);
+                              }
+                            }}
+                            containerClassName="gap-3"
+                          >
+                            <InputOTPGroup className="gap-3">
+                              {Array.from({ length: 6 }, (_, index) => (
+                                <InputOTPSlot
+                                  key={index}
+                                  index={index}
+                                  className={`h-16.75 w-17 rounded-[6px] border p-4 text-lg font-semibold ${isOtpInvalid ? "border-[#EF4444] text-[#EF4444]" : "border-[#D0D5DD] text-[#101828]"}`}
+                                />
+                              ))}
+                            </InputOTPGroup>
+                          </InputOTP>
                         </div>
 
-                        <div className="flex flex-col items-center gap-2.5">
+                        <p className="text-xs font-semibold text-[#667085]">
+                          Resend available in 00:
+                          {String(resendCountdown).padStart(2, "0")}
+                        </p>
+
+                        <div
+                          className={`flex flex-col items-center gap-2.5 transition-opacity ${resendCountdown > 0 ? "opacity-60 pointer-events-none" : "opacity-100"}`}
+                        >
                           <span className="text-[#7B7D86] font-semibold text-xs">
                             Didn't receive a code? Check SMS
                           </span>
-                          <button className="hover:cursor-pointer bg-[#0A0A0A] py-2 px-4 rounded-[6px] w-20 h-8 text-[8px] font-semibold text-white hover:bg-[#1A1A21]">
+                          <button
+                            type="button"
+                            disabled={resendCountdown > 0 || isResendingOtp}
+                            onClick={async () => {
+                              const phone = form.getValues().phone;
+                              if (!phone || phone.length < 10) {
+                                toast.error(
+                                  "Please enter a valid phone number",
+                                );
+                                return;
+                              }
+
+                              setIsResendingOtp(true);
+                              try {
+                                const { response, data } = await apiJson<{
+                                  success?: boolean;
+                                  message?: string;
+                                  error?: string;
+                                  medium?: "whatsapp" | "sms";
+                                }>("/team/add-employee/send-otp", {
+                                  method: "POST",
+                                  headers: jsonHeaders,
+                                  body: JSON.stringify({ identifier: phone }),
+                                });
+
+                                if (!response.ok || !data?.success) {
+                                  toast.error(
+                                    data?.message ??
+                                      data?.error ??
+                                      "Failed to resend OTP. Please try again.",
+                                  );
+                                  return;
+                                }
+
+                                toast.success(
+                                  data.message ?? "OTP resent successfully.",
+                                );
+                                setResendCountdown(30);
+                              } catch {
+                                toast.error(
+                                  "Unable to resend OTP right now. Please try again.",
+                                );
+                              } finally {
+                                setIsResendingOtp(false);
+                              }
+                            }}
+                            className="hover:cursor-pointer bg-[#0A0A0A] py-2 px-4 rounded-[6px] w-20 h-8 text-[8px] font-semibold text-white hover:bg-[#1A1A21] disabled:cursor-not-allowed"
+                          >
                             Resend OTP
                           </button>
                         </div>
 
                         <div className="w-127.5 border border-[#E9E9E9]" />
 
-                        <Button className="bg-[#00C950] py-2 mb-4 px-4 rounded-xl w-73.5 h-9 hover:bg-[#29ca4c] text-sm font-semibold text-white">
-                          Verify
+                        <Button
+                          type="button"
+                          disabled={isVerifyingOtp}
+                          onClick={async () => {
+                            const otp = otpValue.trim();
+                            const phone = form.getValues().phone;
+
+                            if (!phone || phone.length < 10) {
+                              toast.error("Please enter a valid phone number");
+                              return;
+                            }
+
+                            if (otp.length !== 6) {
+                              toast.error("Please enter the 6-digit OTP.");
+                              return;
+                            }
+
+                            setIsVerifyingOtp(true);
+                            try {
+                              const { response, data } = await apiJson<{
+                                message?: string;
+                              }>("/team/add-employee/verify-otp", {
+                                method: "POST",
+                                headers: jsonHeaders,
+                                body: JSON.stringify({
+                                  identifier: phone,
+                                  otp,
+                                }),
+                              });
+
+                              if (!response.ok) {
+                                setOtpValue("");
+                                setIsOtpInvalid(true);
+                                toast.error(
+                                  data?.message ??
+                                    "Unable to verify OTP. Please try again.",
+                                );
+                                return;
+                              }
+
+                              form.setValue("isPhoneVerified", true);
+                              toast.success(
+                                data?.message ?? "OTP verified successfully.",
+                              );
+                              setOpenPhoneVerifyDialog(false);
+                            } catch {
+                              toast.error(
+                                "Unable to verify OTP right now. Please try again.",
+                              );
+                            } finally {
+                              setIsVerifyingOtp(false);
+                            }
+                          }}
+                          className="bg-[#00C950] py-2 mb-12 px-4 rounded-xl w-73.5 h-9 hover:bg-[#29ca4c] text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {isVerifyingOtp ? "Verifying..." : "Verify"}
                         </Button>
                       </div>
                     </DialogContent>
@@ -919,6 +1157,7 @@ const AddEmployee = () => {
 
                   <div className="mt-10 mb-20 flex justify-center">
                     <button
+                      disabled={form.watch("isAadharVerified")}
                       onClick={() => {
                         let aFrt = form.getValues().aadharFront;
                         let aBck = form.getValues().aadharBack;
@@ -933,75 +1172,22 @@ const AddEmployee = () => {
 
                         setAadharVerifyDialogOpen(true);
                       }}
-                      className="w-73.5 h-9 bg-[#00c950] hover:bg-[#29ca4c] text-sm font-semibold text-white rounded-xl"
+                      className={`w-73.5 h-9 bg-[#00c950] hover:bg-[#29ca4c] text-sm font-semibold text-white rounded-xl disabled:cursor-not-allowed disabled:opacity-70`}
                     >
-                      Verify
+                      {form.watch("isAadharVerified") ? "Verified" : "Verify"}
                     </button>
                   </div>
 
-                  <Dialog
+                  <AadharVerifyDialog
                     open={aadharVerifyDialogOpen}
                     onOpenChange={setAadharVerifyDialogOpen}
-                  >
-                    <DialogContent className="sm:max-w-139.5 sm:max-h-97 rounded-[10px] gap-8">
-                      <DialogHeader>
-                        <DialogTitle className="text-2xl font-semibold text-[#1A1A21] text-center">
-                          Verify Aadhar
-                        </DialogTitle>
-                        <DialogDescription className="text-center  text-[#8C94A6] font-normal text-base">
-                          Please enter aadhar number for verification
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      <div className="flex w-123.25 flex-col items-center gap-5">
-                        <FormField
-                          control={form.control}
-                          name="aadharNumber"
-                          render={({ field }) => (
-                            <FormItem className="w-full">
-                              <FormLabel className={employeeLabelClassName}>
-                                Aadhaar Number
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder="Enter 12-digit Aadhaar number"
-                                  inputMode="numeric"
-                                  maxLength={12}
-                                  className="h-14 w-full rounded-[6px] border border-[#D0D5DD] px-4 py-4 text-base text-[#101828] placeholder:text-[#98A2B3]"
-                                  onChange={(event) => {
-                                    const digitsOnly =
-                                      event.target.value.replace(/\D/g, "");
-                                    field.onChange(digitsOnly);
-                                  }}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            const aadharNumber =
-                              form.getValues().aadharNumber ?? "";
-                            if (aadharNumber.length !== 12) {
-                              toast.error(
-                                "Please enter a valid 12-digit Aadhaar number.",
-                              );
-                              return;
-                            }
-                            toast.success("Aadhaar verified successfully.");
-                            setAadharVerifyDialogOpen(false);
-                          }}
-                          className="w-73.5 h-9 bg-[#00c950] text-sm font-semibold text-white hover:bg-[#29ca4c] my-4"
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                    form={form}
+                    employeeLabelClassName={employeeLabelClassName}
+                    setAadharVerifyDialogOpen={setAadharVerifyDialogOpen}
+                    aadharData={aadharData}
+                    setAadharData={setAadharData}
+                    handleAadharVerification={handleAadharVerification}
+                  />
 
                   <div className="border-t border-[#EAECF0] pt-6">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1084,7 +1270,11 @@ const AddEmployee = () => {
                                 <TabsList className="grid h-full w-full grid-cols-1 gap-2 rounded-[6px] bg-[#EAEAEA] sm:grid-cols-2 sm:gap-3">
                                   <TabsTrigger
                                     value="bank-account"
-                                    className="h-auto rounded-[6px] bg-[#336AEA] px-3 py-3 text-sm font-semibold data-[state=active]:bg-[#336AEA] data-[state=active]:opacity-60 flex flex-col items-center justify-center gap-0.5 sm:h-14"
+                                    disabled={
+                                      form.watch("isBankVerified") ||
+                                      form.watch("isUpiVerified")
+                                    }
+                                    className="h-auto rounded-[6px] bg-[#336AEA] px-3 py-3 text-sm font-semibold  disabled:cursor-not-allowed data-[state=active]:bg-[#336AEA] data-[state=active]:opacity-60 flex flex-col items-center justify-center gap-0.5 sm:h-14"
                                   >
                                     <span className="text-sm font-semibold text-white sm:text-base">
                                       Bank Account
@@ -1095,7 +1285,11 @@ const AddEmployee = () => {
                                   </TabsTrigger>
                                   <TabsTrigger
                                     value="upi"
-                                    className="h-auto rounded-[6px] bg-[#00C950] px-3 py-3 text-sm font-semibold data-[state=active]:bg-[#00C950] data-[state=active]:opacity-60 data-[state=active]:text-white flex flex-col items-center justify-center gap-0.5 sm:h-14"
+                                    disabled={
+                                      form.watch("isBankVerified") ||
+                                      form.watch("isUpiVerified")
+                                    }
+                                    className="h-auto rounded-[6px] bg-[#00C950] px-3 py-3 text-sm font-semibold  disabled:cursor-not-allowed data-[state=active]:bg-[#00C950] data-[state=active]:opacity-60 data-[state=active]:text-white flex flex-col items-center justify-center gap-0.5 sm:h-14"
                                   >
                                     <span className="text-sm font-semibold text-white sm:text-base">
                                       UPI
@@ -1138,13 +1332,15 @@ const AddEmployee = () => {
                                   }
                                 }}
                               >
-                                <PopoverTrigger asChild>
+                                <PopoverTrigger asChild
+                                disabled={form.watch("isBankVerified") || isVerifyingBank}
+                                >
                                   <Button
                                     type="button"
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={isBankComboboxOpen}
-                                    className="h-14 w-full max-w-127.5 justify-between gap-3 rounded-[6px] border border-[#D0D5DD] px-4 py-4 font-normal"
+                                    className="h-14 w-full max-w-127.5 justify-between gap-3 rounded-[6px] border border-[#D0D5DD] px-4 py-4 font-normal disabled:cursor-not-allowed"
                                   >
                                     <span
                                       className={
@@ -1219,6 +1415,7 @@ const AddEmployee = () => {
                             <FormControl>
                               <Input
                                 {...field}
+                                readOnly={form.watch("isBankVerified") || isVerifyingBank}
                                 placeholder="Enter IFSC code"
                                 className="h-14 w-full max-w-127.5 rounded-[6px] border border-[#D0D5DD] px-4 py-4 text-base text-[#101828] placeholder:text-[#98A2B3] uppercase"
                               />
@@ -1239,6 +1436,7 @@ const AddEmployee = () => {
                             <FormControl>
                               <Input
                                 {...field}
+                                readOnly={form.watch("isBankVerified") || isVerifyingBank}
                                 placeholder="Enter account number"
                                 className="h-14 w-full max-w-127.5 rounded-[6px] border border-[#D0D5DD] px-4 py-4 text-base text-[#101828] placeholder:text-[#98A2B3]"
                               />
@@ -1251,7 +1449,8 @@ const AddEmployee = () => {
                       <div className="flex justify-center mt-4">
                         <Button
                           type="button"
-                          onClick={() => {
+                          disabled={isVerifyingBank || form.watch("isBankVerified")}
+                          onClick={async () => {
                             const bankName = form.getValues().bankName;
                             const ifscCode = form.getValues().ifscCode;
                             const accountNumber =
@@ -1269,14 +1468,63 @@ const AddEmployee = () => {
                               toast.error("Please enter account number");
                               return;
                             }
-
-                            // Simulate verification
-                            setBeneficiaryName("Rahul Kumar");
-                            toast.success("Bank details verified successfully");
+                            setIsVerifyingBank(true);
+                            try {
+                              const { data } = await apiJson<{
+                                status_code: number;
+                                data: {
+                                  account_exists: boolean;
+                                  name_at_bank: string;
+                                  full_name: string;
+                                };
+                                status: string;
+                                message: string;
+                              }>(`/team/add-employee/verify-bank`, {
+                                method: "POST",
+                                body: JSON.stringify({
+                                  ifsc: ifscCode,
+                                  id_number: accountNumber,
+                                }),
+                                headers: {
+                                  "Content-Type": "application/json",
+                                },
+                              });
+                              if (
+                                data.status === "success" &&
+                                data.data.account_exists
+                              ) {
+                                setBeneficiaryName(data.data.name_at_bank || data.data.full_name);
+                                form.setValue("isBankVerified", true);
+                                form.setValue(
+                                  "beneficiaryName",
+                                  data.data.name_at_bank || data.data.full_name,
+                                );
+                                toast.success(
+                                  "Bank details verified successfully",
+                                );
+                              } else {
+                                toast.error(
+                                  data.message ||
+                                    "Failed to verify bank details. Please check the details and try again.",
+                                );
+                              }
+                            } catch (error) {
+                              toast.error(
+                                "Failed to verify bank details. Please try again.",
+                              );
+                              return;
+                            } finally {
+                              setIsVerifyingBank(false);
+                            }
+                         
                           }}
-                          className="h-9 w-73  rounded-[10px] bg-[#00C950] px-6 text-sm font-semibold text-white hover:bg-[#29ca4c]"
+                          className="h-9 w-73  rounded-[10px] bg-[#00C950] px-6 text-sm font-semibold text-white hover:bg-[#29ca4c] disabled:cursor-not-allowed"
                         >
-                          Verify
+                          {isVerifyingBank ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            form.watch("isBankVerified") ? "Verified" : "Verify"
+                          )}
                         </Button>
                       </div>
 
@@ -1309,7 +1557,7 @@ const AddEmployee = () => {
                     <div className="space-y-6">
                       <FormField
                         control={form.control}
-                        name="aadharNumber"
+                        name="upiId"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className={employeeLabelClassName}>
@@ -1318,8 +1566,9 @@ const AddEmployee = () => {
                             <FormControl>
                               <Input
                                 {...field}
+                                disabled={form.watch("isUpiVerified")}
                                 placeholder="Enter UPI ID (e.g. name@bank)"
-                                className="h-14 w-full max-w-127.5 rounded-[6px] border border-[#D0D5DD] px-4 py-4 text-base text-[#101828] placeholder:text-[#98A2B3]"
+                                className="h-14 w-full disabled:cursor-not-allowed  max-w-127.5 rounded-[6px] border border-[#D0D5DD] px-4 py-4 text-base text-[#101828] placeholder:text-[#98A2B3]"
                               />
                             </FormControl>
                             <FormMessage />
@@ -1330,21 +1579,78 @@ const AddEmployee = () => {
                       <div className="flex justify-center mt-4">
                         <Button
                           type="button"
-                          onClick={() => {
-                            const upiId = form.getValues().aadharNumber;
+                          disabled={
+                            isVerifyingUpi || form.watch("isUpiVerified")
+                          }
+                          onClick={async () => {
+                            const upiId = form.getValues().upiId?.trim();
 
                             if (!upiId) {
                               toast.error("Please enter UPI ID");
                               return;
                             }
 
-                            // Simulate verification
-                            setBeneficiaryName("Rahul Kumar");
-                            toast.success("UPI details verified successfully");
+                            if (!/^[^\s@]+@[^\s@]+$/.test(upiId)) {
+                              toast.error("Please enter a valid UPI ID");
+                              return;
+                            }
+                            setIsVerifyingUpi(true);
+                            try {
+                              const { data } = await apiJson<{
+                                status_code: number;
+                                data: {
+                                  account_exists: boolean;
+                                  name_at_bank: string;
+                                };
+                                status: string;
+                                message: string;
+                              }>(`/team/add-employee/verify-upi`, {
+                                method: "POST",
+                                body: JSON.stringify({ upi_id: upiId }),
+                                headers: {
+                                  "Content-Type": "application/json",
+                                },
+                              });
+
+                              if (
+                                data.status === "success" &&
+                                data.data.account_exists
+                              ) {
+                                setBeneficiaryName(data.data.name_at_bank);
+                                form.setValue("isUpiVerified", true);
+                                form.setValue(
+                                  "beneficiaryName",
+                                  data.data.name_at_bank,
+                                );
+                                toast.success(
+                                  "UPI details verified successfully",
+                                );
+                              } else {
+                                toast.error(
+                                  data.message ||
+                                    "Failed to verify UPI details. Please check the UPI ID and try again.",
+                                );
+                              }
+                            } catch (error) {
+                              toast.error(
+                                "Failed to verify UPI details. Please try again.",
+                              );
+                              return;
+                            } finally {
+                              setIsVerifyingUpi(false);
+                            }
                           }}
-                          className="h-9 w-73 rounded-[10px] bg-[#00C950] px-6 text-sm font-semibold text-white hover:bg-[#29ca4c]"
+                          className="h-9 w-73 rounded-[10px] bg-[#00C950] px-6 text-sm font-semibold text-white hover:bg-[#29ca4c] disabled:opacity-70 disabled:cursor-not-allowed  "
                         >
-                          Verify
+                          {isVerifyingUpi ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              {form.watch("isUpiVerified")
+                                ? "Verified"
+                                : "Verify"}
+                            </>
+                          )}
                         </Button>
                       </div>
 
@@ -1373,279 +1679,342 @@ const AddEmployee = () => {
                     </div>
                   )}
 
-                 <div className="flex flex-col my-10 gap-8">
-                   <FormField
-                    control={form.control}
-                    name="qualificationDocument"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className={employeeLabelClassName}>
-                          Qualification Document
-                        </FormLabel>
-                        <FormControl>
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                            <div className="h-12.5 w-12.5 shrink-0 rounded-full bg-[#F2F4F7] flex items-center justify-center self-start sm:self-auto">
-                              <Upload className="h-4.5 w-4.5 text-[#667085]" />
-                            </div>
-
-                            <div className="flex w-full min-w-0 flex-col gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-4 py-4 box-border sm:h-12.75 sm:flex-row sm:items-center sm:justify-between sm:py-5.5">
-                              <div className="flex min-w-0 items-center gap-3">
-                                <label
-                                  htmlFor="employee-qualification-document"
-                                  className="inline-flex cursor-pointer items-center rounded-xl border-none py-2 text-sm font-medium text-[#344054] hover:bg-[#F2F4F7] sm:pl-3"
-                                >
-                                  Choose file
-                                </label>
-                                <p className="truncate text-sm text-[#98A2B3]">
-                                  {selectedQualificationFileName}
-                                </p>
-                              </div>
-                              <Button
-                                ref={field.ref}
-                                onClick={() => {
-                                  document
-                                    .getElementById(
-                                      "employee-qualification-document",
-                                    )
-                                    ?.click();
-                                }}
-                                type="button"
-                                className="h-9 w-full rounded-[10px] bg-[#336AEA] px-6 text-white hover:bg-[#2958CA] sm:w-auto"
-                              >
-                                Upload
-                              </Button>
-
-                              <input
-                                id="employee-qualification-document"
-                                type="file"
-                                accept="image/png,image/jpeg"
-                                className="hidden"
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0];
-                                  setSelectedQualificationFileName(
-                                    file?.name ?? "No file chosen",
-                                  );
-                                  field.onChange(file ?? undefined);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </FormControl>
-                        <p className="text-xs text-[#667185]">
-                          Max size: 5MB. Supported formats: JPG, PNG
-                        </p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="vehicleImageFront"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className={employeeLabelClassName}>
-                          Vehicle Image (Front)
-                        </FormLabel>
-                        <FormControl>
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                            <div className="h-12.5 w-12.5 shrink-0 rounded-full bg-[#F2F4F7] flex items-center justify-center self-start sm:self-auto">
-                              <Upload className="h-4.5 w-4.5 text-[#667085]" />
-                            </div>
-
-                            <div className="flex w-full min-w-0 flex-col gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-4 py-4 box-border sm:h-12.75 sm:flex-row sm:items-center sm:justify-between sm:py-5.5">
-                              <div className="flex min-w-0 items-center gap-3">
-                                <label
-                                  htmlFor="employee-vehicle-image-front"
-                                  className="inline-flex cursor-pointer items-center rounded-xl border-none py-2 text-sm font-medium text-[#344054] hover:bg-[#F2F4F7] sm:pl-3"
-                                >
-                                  Choose file
-                                </label>
-                                <p className="truncate text-sm text-[#98A2B3]">
-                                  {selectedVehicleImageFrontName}
-                                </p>
-                              </div>
-                              <Button
-                                ref={field.ref}
-                                onClick={() => {
-                                  document
-                                    .getElementById(
-                                      "employee-vehicle-image-front",
-                                    )
-                                    ?.click();
-                                }}
-                                type="button"
-                                className="h-9 w-full rounded-[10px] bg-[#336AEA] px-6 text-white hover:bg-[#2958CA] sm:w-auto"
-                              >
-                                Upload
-                              </Button>
-
-                              <input
-                                id="employee-vehicle-image-front"
-                                type="file"
-                                accept="image/png,image/jpeg"
-                                className="hidden"
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0];
-                                  setSelectedVehicleImageFrontName(
-                                    file?.name ?? "No file chosen",
-                                  );
-                                  field.onChange(file ?? undefined);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </FormControl>
-                        <p className="text-xs text-[#667185]">
-                          Max size: 5MB. Supported formats: JPG, PNG
-                        </p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="vehicleImageBack"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className={employeeLabelClassName}>
-                          Vehicle Image (Back)
-                        </FormLabel>
-                        <FormControl>
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                            <div className="h-12.5 w-12.5 shrink-0 rounded-full bg-[#F2F4F7] flex items-center justify-center self-start sm:self-auto">
-                              <Upload className="h-4.5 w-4.5 text-[#667085]" />
-                            </div>
-
-                            <div className="flex w-full min-w-0 flex-col gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-4 py-4 box-border sm:h-12.75 sm:flex-row sm:items-center sm:justify-between sm:py-5.5">
-                              <div className="flex min-w-0 items-center gap-3">
-                                <label
-                                  htmlFor="employee-vehicle-image-back"
-                                  className="inline-flex cursor-pointer items-center rounded-xl border-none py-2 text-sm font-medium text-[#344054] hover:bg-[#F2F4F7] sm:pl-3"
-                                >
-                                  Choose file
-                                </label>
-                                <p className="truncate text-sm text-[#98A2B3]">
-                                  {selectedVehicleImageBackName}
-                                </p>
-                              </div>
-                              <Button
-                                ref={field.ref}
-                                onClick={() => {
-                                  document
-                                    .getElementById(
-                                      "employee-vehicle-image-back",
-                                    )
-                                    ?.click();
-                                }}
-                                type="button"
-                                className="h-9 w-full rounded-[10px] bg-[#336AEA] px-6 text-white hover:bg-[#2958CA] sm:w-auto"
-                              >
-                                Upload
-                              </Button>
-
-                              <input
-                                id="employee-vehicle-image-back"
-                                type="file"
-                                accept="image/png,image/jpeg"
-                                className="hidden"
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0];
-                                  setSelectedVehicleImageBackName(
-                                    file?.name ?? "No file chosen",
-                                  );
-                                  field.onChange(file ?? undefined);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </FormControl>
-                        <p className="text-xs text-[#667185]">
-                          Max size: 5MB. Supported formats: JPG, PNG
-                        </p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                 </div>
-
-                 <h2 className="text-2xl text-[#1A1A21] font-semibold text-center">
-                  Other Details
-                 </h2>
-
-          
+                  <div className="flex flex-col my-10 gap-8">
                     <FormField
                       control={form.control}
-                      name="dateOfJoining"
+                      name="contractDocument"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className={employeeLabelClassName}>
-                            Date of Joining
+                            Upload Contract / Agreement
                           </FormLabel>
                           <FormControl>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-14 w-full max-w-127.5 justify-between rounded-[6px] border border-[#D0D5DD] px-4 py-4 font-normal text-base"
-                                >
-                                  <span
-                                    className={
-                                      field.value
-                                        ? "text-[#101828]"
-                                        : "text-[#98A2B3]"
-                                    }
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                              <div className="h-12.5 w-12.5 shrink-0 rounded-full bg-[#F2F4F7] flex items-center justify-center self-start sm:self-auto">
+                                <Upload className="h-4.5 w-4.5 text-[#667085]" />
+                              </div>
+
+                              <div className="flex w-full min-w-0 flex-col gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-4 py-4 box-border sm:h-12.75 sm:flex-row sm:items-center sm:justify-between sm:py-5.5">
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <label
+                                    htmlFor="employee-contract-document"
+                                    className="inline-flex cursor-pointer items-center rounded-xl border-none py-2 text-sm font-medium text-[#344054] hover:bg-[#F2F4F7] sm:pl-3"
                                   >
-                                    {field.value
-                                      ? new Date(field.value).toLocaleDateString(
-                                          "en-US",
-                                          {
-                                            year: "numeric",
-                                            month: "long",
-                                            day: "numeric",
-                                          }
-                                        )
-                                      : "Pick a date"}
-                                  </span>
-                                  <CalendarIcon className="h-4 w-4 text-[#667085]" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={
-                                    field.value
-                                      ? new Date(field.value)
-                                      : undefined
-                                  }
-                                  onSelect={(date) => {
-                                    field.onChange(
-                                      date
-                                        ? date.toISOString().split("T")[0]
-                                        : ""
-                                    );
-                                  }}
-                                  disabled={(date) =>
-                                    date > new Date() ||
-                                    date <
-                                      new Date(
-                                        new Date().setFullYear(
-                                          new Date().getFullYear() - 60
-                                        )
+                                    Choose file
+                                  </label>
+                                  <p className="truncate text-sm text-[#98A2B3]">
+                                    {selectedContractFileName}
+                                  </p>
+                                </div>
+                                <Button
+                                  ref={field.ref}
+                                  onClick={() => {
+                                    document
+                                      .getElementById(
+                                        "employee-contract-document",
                                       )
-                                  }
-                                  initialFocus
+                                      ?.click();
+                                  }}
+                                  type="button"
+                                  className="h-9 w-full rounded-[10px] bg-[#336AEA] px-6 text-white hover:bg-[#2958CA] sm:w-auto"
+                                >
+                                  Upload
+                                </Button>
+
+                                <input
+                                  id="employee-contract-document"
+                                  type="file"
+                                  accept="image/png,image/jpeg"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    setSelectedContractFileName(
+                                      file?.name ?? "No file chosen",
+                                    );
+                                    field.onChange(file ?? undefined);
+                                  }}
                                 />
-                              </PopoverContent>
-                            </Popover>
+                              </div>
+                            </div>
                           </FormControl>
+                          <p className="text-xs text-[#667185]">
+                            Max size: 5MB. Supported formats: JPG, PNG
+                          </p>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="qualificationDocument"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className={employeeLabelClassName}>
+                            Qualification Document
+                          </FormLabel>
+                          <FormControl>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                              <div className="h-12.5 w-12.5 shrink-0 rounded-full bg-[#F2F4F7] flex items-center justify-center self-start sm:self-auto">
+                                <Upload className="h-4.5 w-4.5 text-[#667085]" />
+                              </div>
 
-                  
-              
+                              <div className="flex w-full min-w-0 flex-col gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-4 py-4 box-border sm:h-12.75 sm:flex-row sm:items-center sm:justify-between sm:py-5.5">
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <label
+                                    htmlFor="employee-qualification-document"
+                                    className="inline-flex cursor-pointer items-center rounded-xl border-none py-2 text-sm font-medium text-[#344054] hover:bg-[#F2F4F7] sm:pl-3"
+                                  >
+                                    Choose file
+                                  </label>
+                                  <p className="truncate text-sm text-[#98A2B3]">
+                                    {selectedQualificationFileName}
+                                  </p>
+                                </div>
+                                <Button
+                                  ref={field.ref}
+                                  onClick={() => {
+                                    document
+                                      .getElementById(
+                                        "employee-qualification-document",
+                                      )
+                                      ?.click();
+                                  }}
+                                  type="button"
+                                  className="h-9 w-full rounded-[10px] bg-[#336AEA] px-6 text-white hover:bg-[#2958CA] sm:w-auto"
+                                >
+                                  Upload
+                                </Button>
+
+                                <input
+                                  id="employee-qualification-document"
+                                  type="file"
+                                  accept="image/png,image/jpeg"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    setSelectedQualificationFileName(
+                                      file?.name ?? "No file chosen",
+                                    );
+                                    field.onChange(file ?? undefined);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </FormControl>
+                          <p className="text-xs text-[#667185]">
+                            Max size: 5MB. Supported formats: JPG, PNG
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="vehicleImageFront"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className={employeeLabelClassName}>
+                            Vehicle Image (Front)
+                          </FormLabel>
+                          <FormControl>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                              <div className="h-12.5 w-12.5 shrink-0 rounded-full bg-[#F2F4F7] flex items-center justify-center self-start sm:self-auto">
+                                <Upload className="h-4.5 w-4.5 text-[#667085]" />
+                              </div>
+
+                              <div className="flex w-full min-w-0 flex-col gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-4 py-4 box-border sm:h-12.75 sm:flex-row sm:items-center sm:justify-between sm:py-5.5">
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <label
+                                    htmlFor="employee-vehicle-image-front"
+                                    className="inline-flex cursor-pointer items-center rounded-xl border-none py-2 text-sm font-medium text-[#344054] hover:bg-[#F2F4F7] sm:pl-3"
+                                  >
+                                    Choose file
+                                  </label>
+                                  <p className="truncate text-sm text-[#98A2B3]">
+                                    {selectedVehicleImageFrontName}
+                                  </p>
+                                </div>
+                                <Button
+                                  ref={field.ref}
+                                  onClick={() => {
+                                    document
+                                      .getElementById(
+                                        "employee-vehicle-image-front",
+                                      )
+                                      ?.click();
+                                  }}
+                                  type="button"
+                                  className="h-9 w-full rounded-[10px] bg-[#336AEA] px-6 text-white hover:bg-[#2958CA] sm:w-auto"
+                                >
+                                  Upload
+                                </Button>
+
+                                <input
+                                  id="employee-vehicle-image-front"
+                                  type="file"
+                                  accept="image/png,image/jpeg"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    setSelectedVehicleImageFrontName(
+                                      file?.name ?? "No file chosen",
+                                    );
+                                    field.onChange(file ?? undefined);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </FormControl>
+                          <p className="text-xs text-[#667185]">
+                            Max size: 5MB. Supported formats: JPG, PNG
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="vehicleImageBack"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className={employeeLabelClassName}>
+                            Vehicle Image (Back)
+                          </FormLabel>
+                          <FormControl>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                              <div className="h-12.5 w-12.5 shrink-0 rounded-full bg-[#F2F4F7] flex items-center justify-center self-start sm:self-auto">
+                                <Upload className="h-4.5 w-4.5 text-[#667085]" />
+                              </div>
+
+                              <div className="flex w-full min-w-0 flex-col gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-4 py-4 box-border sm:h-12.75 sm:flex-row sm:items-center sm:justify-between sm:py-5.5">
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <label
+                                    htmlFor="employee-vehicle-image-back"
+                                    className="inline-flex cursor-pointer items-center rounded-xl border-none py-2 text-sm font-medium text-[#344054] hover:bg-[#F2F4F7] sm:pl-3"
+                                  >
+                                    Choose file
+                                  </label>
+                                  <p className="truncate text-sm text-[#98A2B3]">
+                                    {selectedVehicleImageBackName}
+                                  </p>
+                                </div>
+                                <Button
+                                  ref={field.ref}
+                                  onClick={() => {
+                                    document
+                                      .getElementById(
+                                        "employee-vehicle-image-back",
+                                      )
+                                      ?.click();
+                                  }}
+                                  type="button"
+                                  className="h-9 w-full rounded-[10px] bg-[#336AEA] px-6 text-white hover:bg-[#2958CA] sm:w-auto"
+                                >
+                                  Upload
+                                </Button>
+
+                                <input
+                                  id="employee-vehicle-image-back"
+                                  type="file"
+                                  accept="image/png,image/jpeg"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    setSelectedVehicleImageBackName(
+                                      file?.name ?? "No file chosen",
+                                    );
+                                    field.onChange(file ?? undefined);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </FormControl>
+                          <p className="text-xs text-[#667185]">
+                            Max size: 5MB. Supported formats: JPG, PNG
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <h2 className="text-2xl text-[#1A1A21] font-semibold text-center">
+                    Other Details
+                  </h2>
+
+                  <FormField
+                    control={form.control}
+                    name="dateOfJoining"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className={employeeLabelClassName}>
+                          Date of Joining
+                        </FormLabel>
+                        <FormControl>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="h-14 w-full max-w-127.5 justify-between rounded-[6px] border border-[#D0D5DD] px-4 py-4 font-normal text-base"
+                              >
+                                <span
+                                  className={
+                                    field.value
+                                      ? "text-[#101828]"
+                                      : "text-[#98A2B3]"
+                                  }
+                                >
+                                  {field.value
+                                    ? new Date(field.value).toLocaleDateString(
+                                        "en-US",
+                                        {
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                        },
+                                      )
+                                    : "Pick a date"}
+                                </span>
+                                <CalendarIcon className="h-4 w-4 text-[#667085]" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
+                              <Calendar
+                                mode="single"
+                                selected={
+                                  field.value
+                                    ? new Date(field.value)
+                                    : undefined
+                                }
+                                onSelect={(date) => {
+                                  field.onChange(
+                                    date
+                                      ? date.toISOString().split("T")[0]
+                                      : "",
+                                  );
+                                }}
+                                disabled={(date) =>
+                                  date > new Date() ||
+                                  date <
+                                    new Date(
+                                      new Date().setFullYear(
+                                        new Date().getFullYear() - 60,
+                                      ),
+                                    )
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <FormField
@@ -1721,16 +2090,14 @@ const AddEmployee = () => {
                                 <SelectValue placeholder="Select day (1-30)" />
                               </SelectTrigger>
                               <SelectContent>
-                                {Array.from({ length: 30 }, (_, i) => i + 1).map(
-                                  (day) => (
-                                    <SelectItem
-                                      key={day}
-                                      value={day.toString()}
-                                    >
-                                      {day}
-                                    </SelectItem>
-                                  )
-                                )}
+                                {Array.from(
+                                  { length: 30 },
+                                  (_, i) => i + 1,
+                                ).map((day) => (
+                                  <SelectItem key={day} value={day.toString()}>
+                                    {day}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>

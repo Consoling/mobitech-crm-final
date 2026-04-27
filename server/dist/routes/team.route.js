@@ -17,6 +17,7 @@ const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 const LIST_TTL_SECONDS = 30;
 const SUMMARY_TTL_SECONDS = 60;
+const STORE_OPTIONS_TTL_SECONDS = 300;
 const UI_ROLE_ORDER = [
     "Admin",
     "Store Manager",
@@ -137,7 +138,8 @@ const getDisplayName = (user) => {
     if (!candidate) {
         return user.phone;
     }
-    return [candidate.firstName, candidate.lastName].filter(Boolean).join(" ") || user.phone;
+    return ([candidate.firstName, candidate.lastName].filter(Boolean).join(" ") ||
+        user.phone);
 };
 const getEmployeeId = (user) => {
     return (user.admin?.employeeId ??
@@ -215,8 +217,12 @@ router.get("/summary", async (req, res) => {
         const [totalEmployees, totalStores, activeUsers, inactiveUsers] = await Promise.all([
             prisma_1.prisma.user.count({ where: employeeBaseWhere }),
             prisma_1.prisma.store.count(),
-            prisma_1.prisma.user.count({ where: { ...employeeBaseWhere, status: enums_1.UserStatus.ACTIVE } }),
-            prisma_1.prisma.user.count({ where: { ...employeeBaseWhere, status: enums_1.UserStatus.INACTIVE } }),
+            prisma_1.prisma.user.count({
+                where: { ...employeeBaseWhere, status: enums_1.UserStatus.ACTIVE },
+            }),
+            prisma_1.prisma.user.count({
+                where: { ...employeeBaseWhere, status: enums_1.UserStatus.INACTIVE },
+            }),
         ]);
         const payload = {
             data: {
@@ -243,7 +249,9 @@ router.get("/employees", async (req, res) => {
         const limit = parseLimit(req.query.limit);
         const skip = (page - 1) * limit;
         const search = String(req.query.search ?? "").trim();
-        const createdAtRange = typeof req.query.createdAtRange === "string" ? req.query.createdAtRange : undefined;
+        const createdAtRange = typeof req.query.createdAtRange === "string"
+            ? req.query.createdAtRange
+            : undefined;
         const dateStart = getDateRangeStart(createdAtRange);
         const statusFilters = toDbStatuses(parseStringArray(req.query.status));
         const roleFilters = parseStringArray(req.query.role);
@@ -262,21 +270,81 @@ router.get("/employees", async (req, res) => {
                 OR: [
                     { phone: { contains: search, mode: "insensitive" } },
                     { email: { contains: search, mode: "insensitive" } },
-                    { admin: { is: { employeeId: { contains: search, mode: "insensitive" } } } },
-                    { admin: { is: { firstName: { contains: search, mode: "insensitive" } } } },
-                    { admin: { is: { lastName: { contains: search, mode: "insensitive" } } } },
-                    { manager: { is: { employeeId: { contains: search, mode: "insensitive" } } } },
-                    { manager: { is: { firstName: { contains: search, mode: "insensitive" } } } },
-                    { manager: { is: { lastName: { contains: search, mode: "insensitive" } } } },
-                    { technician: { is: { employeeId: { contains: search, mode: "insensitive" } } } },
-                    { technician: { is: { firstName: { contains: search, mode: "insensitive" } } } },
-                    { technician: { is: { lastName: { contains: search, mode: "insensitive" } } } },
-                    { fieldExecutive: { is: { employeeId: { contains: search, mode: "insensitive" } } } },
-                    { fieldExecutive: { is: { firstName: { contains: search, mode: "insensitive" } } } },
-                    { fieldExecutive: { is: { lastName: { contains: search, mode: "insensitive" } } } },
-                    { salesExecutive: { is: { employeeId: { contains: search, mode: "insensitive" } } } },
-                    { salesExecutive: { is: { firstName: { contains: search, mode: "insensitive" } } } },
-                    { salesExecutive: { is: { lastName: { contains: search, mode: "insensitive" } } } },
+                    {
+                        admin: {
+                            is: { employeeId: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        admin: {
+                            is: { firstName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        admin: {
+                            is: { lastName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        manager: {
+                            is: { employeeId: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        manager: {
+                            is: { firstName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        manager: {
+                            is: { lastName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        technician: {
+                            is: { employeeId: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        technician: {
+                            is: { firstName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        technician: {
+                            is: { lastName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        fieldExecutive: {
+                            is: { employeeId: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        fieldExecutive: {
+                            is: { firstName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        fieldExecutive: {
+                            is: { lastName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        salesExecutive: {
+                            is: { employeeId: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        salesExecutive: {
+                            is: { firstName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
+                    {
+                        salesExecutive: {
+                            is: { lastName: { contains: search, mode: "insensitive" } },
+                        },
+                    },
                 ],
             });
         }
@@ -341,11 +409,21 @@ router.get("/employees", async (req, res) => {
                     dateOfBirth: true,
                     dateOfTermination: true,
                     profileImage: true,
-                    admin: { select: { firstName: true, lastName: true, employeeId: true } },
-                    manager: { select: { firstName: true, lastName: true, employeeId: true } },
-                    technician: { select: { firstName: true, lastName: true, employeeId: true } },
-                    fieldExecutive: { select: { firstName: true, lastName: true, employeeId: true } },
-                    salesExecutive: { select: { firstName: true, lastName: true, employeeId: true } },
+                    admin: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
+                    manager: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
+                    technician: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
+                    fieldExecutive: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
+                    salesExecutive: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
                 },
             }),
             prisma_1.prisma.user.groupBy({
@@ -532,7 +610,11 @@ router.get("/employees/:employeeID", async (req, res) => {
             return res.status(404).json({ message: "Employee not found" });
         }
         const employeeId = getEmployeeId(user) ?? employeeID;
-        const profile = user.admin ?? user.manager ?? user.technician ?? user.fieldExecutive ?? user.salesExecutive;
+        const profile = user.admin ??
+            user.manager ??
+            user.technician ??
+            user.fieldExecutive ??
+            user.salesExecutive;
         const bankDetails = user.manager?.bankDetails ??
             user.technician?.bankDetails ??
             user.fieldExecutive?.bankDetails ??
@@ -602,7 +684,9 @@ router.get("/stores", async (req, res) => {
         const limit = parseLimit(req.query.limit);
         const skip = (page - 1) * limit;
         const search = String(req.query.search ?? "").trim();
-        const createdAtRange = typeof req.query.createdAtRange === "string" ? req.query.createdAtRange : undefined;
+        const createdAtRange = typeof req.query.createdAtRange === "string"
+            ? req.query.createdAtRange
+            : undefined;
         const dateStart = getDateRangeStart(createdAtRange);
         const statusFilters = toDbStatuses(parseStringArray(req.query.status));
         const sortBy = typeof req.query.sortBy === "string" ? req.query.sortBy : "createdAt";
@@ -717,6 +801,49 @@ router.get("/stores", async (req, res) => {
     }
     catch (error) {
         console.error("team stores error:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.get("/stores/options", async (req, res) => {
+    try {
+        const search = String(req.query.search ?? "").trim();
+        const limit = Math.min(parseLimit(req.query.limit), 500);
+        const cacheKey = `team:store-options:${JSON.stringify({
+            search,
+            limit,
+        })}`;
+        const cached = await readRouteCache(cacheKey);
+        if (cached) {
+            return withCachingHeaders(req, res, cached, STORE_OPTIONS_TTL_SECONDS);
+        }
+        const where = {};
+        if (search) {
+            where.OR = [
+                { storeName: { contains: search, mode: "insensitive" } },
+                { storeId: { contains: search, mode: "insensitive" } },
+                { ownerName: { contains: search, mode: "insensitive" } },
+            ];
+        }
+        const stores = await prisma_1.prisma.store.findMany({
+            where,
+            take: limit,
+            orderBy: { storeName: "asc" },
+            select: {
+                storeId: true,
+                storeName: true,
+            },
+        });
+        const payload = {
+            items: stores.map((store) => ({
+                value: store.storeId,
+                label: store.storeName,
+            })),
+        };
+        await writeRouteCache(cacheKey, payload, STORE_OPTIONS_TTL_SECONDS);
+        return withCachingHeaders(req, res, payload, STORE_OPTIONS_TTL_SECONDS);
+    }
+    catch (error) {
+        console.error("team store options error:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 });
@@ -838,21 +965,91 @@ router.get("/search", async (req, res) => {
                             OR: [
                                 { phone: { contains: query, mode: "insensitive" } },
                                 { email: { contains: query, mode: "insensitive" } },
-                                { admin: { is: { employeeId: { contains: query, mode: "insensitive" } } } },
-                                { admin: { is: { firstName: { contains: query, mode: "insensitive" } } } },
-                                { admin: { is: { lastName: { contains: query, mode: "insensitive" } } } },
-                                { manager: { is: { employeeId: { contains: query, mode: "insensitive" } } } },
-                                { manager: { is: { firstName: { contains: query, mode: "insensitive" } } } },
-                                { manager: { is: { lastName: { contains: query, mode: "insensitive" } } } },
-                                { technician: { is: { employeeId: { contains: query, mode: "insensitive" } } } },
-                                { technician: { is: { firstName: { contains: query, mode: "insensitive" } } } },
-                                { technician: { is: { lastName: { contains: query, mode: "insensitive" } } } },
-                                { fieldExecutive: { is: { employeeId: { contains: query, mode: "insensitive" } } } },
-                                { fieldExecutive: { is: { firstName: { contains: query, mode: "insensitive" } } } },
-                                { fieldExecutive: { is: { lastName: { contains: query, mode: "insensitive" } } } },
-                                { salesExecutive: { is: { employeeId: { contains: query, mode: "insensitive" } } } },
-                                { salesExecutive: { is: { firstName: { contains: query, mode: "insensitive" } } } },
-                                { salesExecutive: { is: { lastName: { contains: query, mode: "insensitive" } } } },
+                                {
+                                    admin: {
+                                        is: {
+                                            employeeId: { contains: query, mode: "insensitive" },
+                                        },
+                                    },
+                                },
+                                {
+                                    admin: {
+                                        is: { firstName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
+                                {
+                                    admin: {
+                                        is: { lastName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
+                                {
+                                    manager: {
+                                        is: {
+                                            employeeId: { contains: query, mode: "insensitive" },
+                                        },
+                                    },
+                                },
+                                {
+                                    manager: {
+                                        is: { firstName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
+                                {
+                                    manager: {
+                                        is: { lastName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
+                                {
+                                    technician: {
+                                        is: {
+                                            employeeId: { contains: query, mode: "insensitive" },
+                                        },
+                                    },
+                                },
+                                {
+                                    technician: {
+                                        is: { firstName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
+                                {
+                                    technician: {
+                                        is: { lastName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
+                                {
+                                    fieldExecutive: {
+                                        is: {
+                                            employeeId: { contains: query, mode: "insensitive" },
+                                        },
+                                    },
+                                },
+                                {
+                                    fieldExecutive: {
+                                        is: { firstName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
+                                {
+                                    fieldExecutive: {
+                                        is: { lastName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
+                                {
+                                    salesExecutive: {
+                                        is: {
+                                            employeeId: { contains: query, mode: "insensitive" },
+                                        },
+                                    },
+                                },
+                                {
+                                    salesExecutive: {
+                                        is: { firstName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
+                                {
+                                    salesExecutive: {
+                                        is: { lastName: { contains: query, mode: "insensitive" } },
+                                    },
+                                },
                             ],
                         },
                     ],
@@ -862,11 +1059,21 @@ router.get("/search", async (req, res) => {
                     email: true,
                     role: true,
                     isAdmin: true,
-                    admin: { select: { firstName: true, lastName: true, employeeId: true } },
-                    manager: { select: { firstName: true, lastName: true, employeeId: true } },
-                    technician: { select: { firstName: true, lastName: true, employeeId: true } },
-                    fieldExecutive: { select: { firstName: true, lastName: true, employeeId: true } },
-                    salesExecutive: { select: { firstName: true, lastName: true, employeeId: true } },
+                    admin: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
+                    manager: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
+                    technician: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
+                    fieldExecutive: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
+                    salesExecutive: {
+                        select: { firstName: true, lastName: true, employeeId: true },
+                    },
                 },
                 take: limit,
                 orderBy: { createdAt: "desc" },
@@ -934,12 +1141,29 @@ router.get("/filter-options", async (req, res) => {
         const employeeBaseWhere = {
             OR: [{ isAdmin: true }, { role: { in: EMPLOYEE_DB_ROLES } }],
         };
-        const [roleGroupCounts, adminCount, statusCounts, activeStoreCount, inactiveStoreCount] = await Promise.all([
-            prisma_1.prisma.user.groupBy({ by: ["role"], where: employeeBaseWhere, _count: { _all: true } }),
-            prisma_1.prisma.user.count({ where: { ...employeeBaseWhere, OR: [{ isAdmin: true }, { role: enums_1.Role.ADMIN }] } }),
-            prisma_1.prisma.user.groupBy({ by: ["status"], where: employeeBaseWhere, _count: { _all: true } }),
-            prisma_1.prisma.store.count({ where: { user: { is: { status: enums_1.UserStatus.ACTIVE } } } }),
-            prisma_1.prisma.store.count({ where: { user: { is: { status: enums_1.UserStatus.INACTIVE } } } }),
+        const [roleGroupCounts, adminCount, statusCounts, activeStoreCount, inactiveStoreCount,] = await Promise.all([
+            prisma_1.prisma.user.groupBy({
+                by: ["role"],
+                where: employeeBaseWhere,
+                _count: { _all: true },
+            }),
+            prisma_1.prisma.user.count({
+                where: {
+                    ...employeeBaseWhere,
+                    OR: [{ isAdmin: true }, { role: enums_1.Role.ADMIN }],
+                },
+            }),
+            prisma_1.prisma.user.groupBy({
+                by: ["status"],
+                where: employeeBaseWhere,
+                _count: { _all: true },
+            }),
+            prisma_1.prisma.store.count({
+                where: { user: { is: { status: enums_1.UserStatus.ACTIVE } } },
+            }),
+            prisma_1.prisma.store.count({
+                where: { user: { is: { status: enums_1.UserStatus.INACTIVE } } },
+            }),
         ]);
         const roleMap = roleGroupCounts.reduce((accumulator, item) => {
             if (item.role) {
@@ -958,13 +1182,13 @@ router.get("/filter-options", async (req, res) => {
                     count: label === "Admin"
                         ? adminCount
                         : label === "Store Manager"
-                            ? roleMap[enums_1.Role.MANAGER] ?? 0
+                            ? (roleMap[enums_1.Role.MANAGER] ?? 0)
                             : label === "Sales Agent"
-                                ? roleMap[enums_1.Role.MARKETING_EXECUTIVE] ?? 0
+                                ? (roleMap[enums_1.Role.MARKETING_EXECUTIVE] ?? 0)
                                 : label === "Technician"
-                                    ? roleMap[enums_1.Role.TECHNICIAN] ?? 0
+                                    ? (roleMap[enums_1.Role.TECHNICIAN] ?? 0)
                                     : label === "Field Executive"
-                                        ? roleMap[enums_1.Role.FIELD_EXECUTIVE] ?? 0
+                                        ? (roleMap[enums_1.Role.FIELD_EXECUTIVE] ?? 0)
                                         : 0,
                 })),
                 statuses: [
@@ -994,6 +1218,203 @@ router.get("/filter-options", async (req, res) => {
     }
     catch (error) {
         console.error("team filter-options error:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/add-employee/send-otp`, async (req, res) => {
+    try {
+        const { identifier } = req.body;
+        if (!identifier) {
+            return res.status(400).json({ message: "Identifier is required" });
+        }
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // OTP valid for 5 minutes
+        await prisma_1.prisma.otp.create({
+            data: {
+                identifier,
+                otp,
+                expiresAt,
+            },
+        });
+        const whatsappUrl = `https://www.fast2sms.com/dev/whatsapp?authorization=${env_1.SYS_ENV.FAST2SMS_API_KEY}&message_id=4131&numbers=${identifier}&variables_values=${otp}`;
+        let response1, response2;
+        try {
+            response1 = await fetch(whatsappUrl, { method: "GET" });
+        }
+        catch (err) {
+            response1 = { ok: false };
+        }
+        if (response1 && response1.ok) {
+            return res.status(200).json({
+                success: true,
+                message: "OTP sent on WhatsApp",
+                medium: "whatsapp",
+            });
+        }
+        response2 = await fetch(`${env_1.SYS_ENV.FAST2SMS_API_ENDPOINT}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                authorization: env_1.SYS_ENV.FAST2SMS_API_KEY,
+            },
+            body: JSON.stringify({
+                route: "q",
+                numbers: identifier,
+                language: "english",
+                message: `Dear Employee, ${otp} is the OTP for your registration. Please DO NOT SHARE this with anyone. Team Mobitech`,
+            }),
+        });
+        if (response2.ok) {
+            return res.status(200).json({
+                success: true,
+                message: "OTP sent via SMS",
+                medium: "sms",
+            });
+        }
+        else {
+            const errorText = await response2.text();
+            console.error("Fast2SMS Error:", errorText);
+            return res.status(500).json({
+                success: false,
+                error: "Failed to send OTP via WhatsApp and SMS",
+            });
+        }
+    }
+    catch (error) {
+        console.error("Error sending OTP:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/add-employee/verify-otp`, async (req, res) => {
+    try {
+        const { identifier, otp } = req.body;
+        if (!identifier || !otp) {
+            return res
+                .status(400)
+                .json({ message: "Identifier and OTP are required" });
+        }
+        const record = await prisma_1.prisma.otp.findFirst({
+            where: {
+                identifier,
+                otp,
+                used: false,
+                expiresAt: {
+                    gte: new Date(),
+                },
+            },
+        });
+        if (!record) {
+            return res.status(400).json({ message: "Invalid or expired OTP" });
+        }
+        await prisma_1.prisma.otp.update({
+            where: { id: record.id },
+            data: { used: true },
+        });
+        return res.status(200).json({ message: "OTP verified successfully" });
+    }
+    catch (error) {
+        console.error("Error verifying OTP:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/add-employee/get-aadhar-otp`, async (req, res) => {
+    try {
+        const { aadharId } = req.body;
+        if (!aadharId) {
+            return res.status(400).json({ message: "Aadhar ID is required" });
+        }
+        const response = await fetch("https://api.quickekyc.com/api/v1/aadhaar-v2/generate-otp", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                key: env_1.SYS_ENV.QUICKEKYC_KEY,
+                id_number: aadharId,
+            }),
+        });
+        console.log("QuickKYC OTP Response Status:", response.status);
+        const data = await response.json();
+        return res.status(200).json(data);
+    }
+    catch (error) {
+        console.error("Error sending Aadhar OTP:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/add-employee/verify-aadhar-otp`, async (req, res) => {
+    try {
+        const { request_id, otp } = req.body;
+        if (!request_id || !otp) {
+            return res
+                .status(400)
+                .json({ message: "Request ID and OTP are required" });
+        }
+        const response = await fetch("https://api.quickekyc.com/api/v1/aadhaar-v2/submit-otp", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                key: env_1.SYS_ENV.QUICKEKYC_KEY,
+                request_id,
+                otp,
+            }),
+        });
+        const data = await response.json();
+        return res.status(200).json(data);
+    }
+    catch (error) {
+        console.error("Error verifying Aadhar OTP:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/add-employee/verify-upi`, async (req, res) => {
+    try {
+        const { upi_id } = req.body;
+        if (!upi_id) {
+            return res.status(400).json({ message: "UPI ID is required" });
+        }
+        const response = await fetch("https://api.quickekyc.com/api/v1/bank-verification/upi-verification", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                key: env_1.SYS_ENV.QUICKEKYC_KEY,
+                upi_id,
+            }),
+        });
+        const data = await response.json();
+        return res.status(200).json(data);
+    }
+    catch (error) {
+        console.error("Error verifying UPI:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/add-employee/verify-bank`, async (req, res) => {
+    try {
+        const { id_number, ifsc } = req.body;
+        if (!id_number || !ifsc) {
+            return res.status(400).json({ message: "ID Number and IFSC are required" });
+        }
+        const response = await fetch("https://api.quickekyc.com/api/v1/bank-verification", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                key: env_1.SYS_ENV.QUICKEKYC_KEY,
+                id_number,
+                ifsc,
+            }),
+        });
+        const data = await response.json();
+        return res.status(200).json(data);
+    }
+    catch (error) {
+        console.error("Error verifying bank details:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 });
