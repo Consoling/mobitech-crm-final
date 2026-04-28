@@ -22,7 +22,7 @@ import uploadDiagDataRoute from "./routes/diagnose_routes/upload-diag-data.route
 import teamRoutes from "./routes/team.route";
 
 import getModelsByBrandRoute from "./routes/pickup_app_routes/get-models-by-brand.route";
-import getIndividualModelDataRoute from "./routes/pickup_app_routes/get-models-by-brand.route";
+import getIndividualModelDataRoute from "./routes/pickup_app_routes/get-individual-mode-data.route";
 import { connectDb } from "./lib/connectDb";
 const app = express();
 app.set("trust proxy", true);

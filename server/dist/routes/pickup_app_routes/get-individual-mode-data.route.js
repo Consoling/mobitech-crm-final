@@ -30,3 +30,4 @@ router.post("/get-individual-model-data", async (req, res) => {
             .json({ result: "error", message: "Internal server error" });
     }
 });
+exports.default = router;
