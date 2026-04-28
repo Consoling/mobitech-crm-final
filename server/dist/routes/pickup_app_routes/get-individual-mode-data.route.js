@@ -20,8 +20,7 @@ router.post("/get-individual-model-data", async (req, res) => {
             return res.status(404).json({ error: "Model not found" });
         }
         return res.status(200).json({
-            result: "success",
-            data: deviceData,
+            deviceData,
         });
     }
     catch (error) {
