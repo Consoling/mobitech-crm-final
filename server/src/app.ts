@@ -22,6 +22,7 @@ import uploadDiagDataRoute from "./routes/diagnose_routes/upload-diag-data.route
 import teamRoutes from "./routes/team.route";
 
 import getModelsByBrandRoute from "./routes/pickup_app_routes/get-models-by-brand.route";
+import getIndividualModelDataRoute from "./routes/pickup_app_routes/get-models-by-brand.route";
 import { connectDb } from "./lib/connectDb";
 const app = express();
 app.set("trust proxy", true);
@@ -63,6 +64,7 @@ app.use(`/api/v1/diagnose`, getDeviceFromModelCodeRoute);
 app.use(`/api/v1/diagnose`, uploadDiagDataRoute);
 
 app.use(`/api/v1/pickup`, getModelsByBrandRoute);
+app.use(`/api/v1/pickup`, getIndividualModelDataRoute);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
   try {
     const body = req.body;

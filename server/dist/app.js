@@ -25,6 +25,7 @@ const device_data_route_2 = __importDefault(require("./routes/diagnose_routes/de
 const upload_diag_data_route_1 = __importDefault(require("./routes/diagnose_routes/upload-diag-data.route"));
 const team_route_1 = __importDefault(require("./routes/team.route"));
 const get_models_by_brand_route_1 = __importDefault(require("./routes/pickup_app_routes/get-models-by-brand.route"));
+const get_models_by_brand_route_2 = __importDefault(require("./routes/pickup_app_routes/get-models-by-brand.route"));
 const connectDb_1 = require("./lib/connectDb");
 const app = (0, express_1.default)();
 app.set("trust proxy", true);
@@ -59,6 +60,7 @@ app.use(`/api/v1/diagnose`, verify_selfie_route_1.default);
 app.use(`/api/v1/diagnose`, device_data_route_2.default);
 app.use(`/api/v1/diagnose`, upload_diag_data_route_1.default);
 app.use(`/api/v1/pickup`, get_models_by_brand_route_1.default);
+app.use(`/api/v1/pickup`, get_models_by_brand_route_2.default);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
     try {
         const body = req.body;
