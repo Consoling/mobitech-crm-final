@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import { SYS_ENV } from "./utils/env";
 import cors from "cors";
@@ -20,6 +20,8 @@ import verifySelfieRoutes from "./routes/diagnose_routes/verify-selfie.route";
 import getDeviceFromModelCodeRoute from "./routes/diagnose_routes/device-data.route";
 import uploadDiagDataRoute from "./routes/diagnose_routes/upload-diag-data.route";
 import teamRoutes from "./routes/team.route";
+
+import getModelsByBrandRoute from "./routes/pickup_app_routes/get-models-by-brand.route";
 import { connectDb } from "./lib/connectDb";
 const app = express();
 app.set("trust proxy", true);
@@ -59,6 +61,8 @@ app.use(`/api/v1/diagnose`, mfaDiagnoseRoutes);
 app.use(`/api/v1/diagnose`, verifySelfieRoutes);
 app.use(`/api/v1/diagnose`, getDeviceFromModelCodeRoute);
 app.use(`/api/v1/diagnose`, uploadDiagDataRoute);
+
+app.use(`/api/v1/pickup`, getModelsByBrandRoute);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
   try {
     const body = req.body;
@@ -67,6 +71,22 @@ app.post("/api/v1/get-diagnostics-data", (req, res) => {
     console.error(`Error in get diagnostics data route:`, error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
+});
+
+app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+  if (
+    err instanceof SyntaxError &&
+    "status" in err &&
+    (err as { status?: number }).status === 400 &&
+    "body" in (err as Record<string, unknown>)
+  ) {
+    return res.status(400).json({
+      result: "error",
+      message: "Invalid JSON payload",
+    });
+  }
+
+  return next(err);
 });
 
 async function startServer() {

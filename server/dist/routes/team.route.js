@@ -153,35 +153,24 @@ const getImagePayload = async (key) => {
     if (!key) {
         return null;
     }
+    // Prefer CDN URL if available (avoids S3 permission/signature issues)
+    if (CDN_BASE_URL) {
+        return {
+            key,
+            url: `${CDN_BASE_URL}/${key}`,
+        };
+    }
+    // Fall back to presigned S3 URL if CDN not configured
     if (s3Client && S3_BUCKET_NAME) {
         try {
             const url = await (0, s3_request_presigner_1.getSignedUrl)(s3Client, new client_s3_1.GetObjectCommand({
                 Bucket: S3_BUCKET_NAME,
                 Key: key,
             }), { expiresIn: S3_PRESIGNED_URL_EXPIRES_IN_SECONDS });
-            // Validate presigned URL quickly (HEAD) so we can detect provider/bucket issues
-            try {
-                const headResp = await fetch(url, { method: "HEAD" });
-                if (!headResp.ok) {
-                    console.error("Presigned URL HEAD returned non-OK", {
-                        key,
-                        status: headResp.status,
-                        statusText: headResp.statusText,
-                    });
-                    // If a CDN base is configured, fall back to CDN path which may work in prod
-                    if (CDN_BASE_URL) {
-                        return {
-                            key,
-                            url: `${CDN_BASE_URL}/${key}`,
-                        };
-                    }
-                }
-            }
-            catch (err) {
-                // Network/timeout while validating - log and continue returning presigned URL
-                console.error("Error validating presigned URL for key", key, err);
-            }
-            return { key, url };
+            return {
+                key,
+                url,
+            };
         }
         catch (error) {
             console.error("team image url signing error:", error);
@@ -189,7 +178,7 @@ const getImagePayload = async (key) => {
     }
     return {
         key,
-        url: CDN_BASE_URL ? `${CDN_BASE_URL}/${key}` : null,
+        url: null,
     };
 };
 const withCachingHeaders = (req, res, payload, maxAge) => {

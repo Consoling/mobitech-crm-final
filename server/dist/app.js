@@ -24,6 +24,7 @@ const verify_selfie_route_1 = __importDefault(require("./routes/diagnose_routes/
 const device_data_route_2 = __importDefault(require("./routes/diagnose_routes/device-data.route"));
 const upload_diag_data_route_1 = __importDefault(require("./routes/diagnose_routes/upload-diag-data.route"));
 const team_route_1 = __importDefault(require("./routes/team.route"));
+const get_models_by_brand_route_1 = __importDefault(require("./routes/pickup_app_routes/get-models-by-brand.route"));
 const connectDb_1 = require("./lib/connectDb");
 const app = (0, express_1.default)();
 app.set("trust proxy", true);
@@ -57,6 +58,7 @@ app.use(`/api/v1/diagnose`, mfa_route_2.default);
 app.use(`/api/v1/diagnose`, verify_selfie_route_1.default);
 app.use(`/api/v1/diagnose`, device_data_route_2.default);
 app.use(`/api/v1/diagnose`, upload_diag_data_route_1.default);
+app.use(`/api/v1/pickup`, get_models_by_brand_route_1.default);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
     try {
         const body = req.body;
@@ -66,6 +68,18 @@ app.post("/api/v1/get-diagnostics-data", (req, res) => {
         console.error(`Error in get diagnostics data route:`, error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
+});
+app.use((err, _req, res, next) => {
+    if (err instanceof SyntaxError &&
+        "status" in err &&
+        err.status === 400 &&
+        "body" in err) {
+        return res.status(400).json({
+            result: "error",
+            message: "Invalid JSON payload",
+        });
+    }
+    return next(err);
 });
 async function startServer() {
     await prisma_1.prisma
