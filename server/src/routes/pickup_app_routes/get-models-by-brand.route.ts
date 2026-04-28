@@ -30,7 +30,7 @@ router.post("/get-models-by-brand", async (req: Request, res: Response) => {
           .json({ error: "No phone models found for the specified brand" });
       }
 
-      console.log(`Found ${phones.length} phone models for brand ${brand}`);
+     
 
       return res.status(200).json({
         count: phones.length,
