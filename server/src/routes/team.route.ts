@@ -209,10 +209,30 @@ const getImagePayload = async (key: string | null) => {
         { expiresIn: S3_PRESIGNED_URL_EXPIRES_IN_SECONDS },
       );
 
-      return {
-        key,
-        url,
-      };
+      // Validate presigned URL quickly (HEAD) so we can detect provider/bucket issues
+      try {
+        const headResp = await fetch(url, { method: "HEAD" });
+        if (!headResp.ok) {
+          console.error("Presigned URL HEAD returned non-OK", {
+            key,
+            status: headResp.status,
+            statusText: headResp.statusText,
+          });
+
+          // If a CDN base is configured, fall back to CDN path which may work in prod
+          if (CDN_BASE_URL) {
+            return {
+              key,
+              url: `${CDN_BASE_URL}/${key}`,
+            };
+          }
+        }
+      } catch (err) {
+        // Network/timeout while validating - log and continue returning presigned URL
+        console.error("Error validating presigned URL for key", key, err);
+      }
+
+      return { key, url };
     } catch (error) {
       console.error("team image url signing error:", error);
     }

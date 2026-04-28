@@ -2062,7 +2062,7 @@ const AddEmployee = () => {
                                 className="h-14 w-full rounded-[6px] border border-[#D0D5DD] px-4 py-4 pr-16 text-base text-[#101828] placeholder:text-[#98A2B3]"
                               />
                               <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#98A2B3]">
-                                /Day
+                                /Device
                               </span>
                             </div>
                           </FormControl>
