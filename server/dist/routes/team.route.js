@@ -109,7 +109,16 @@ const parseLimit = (input) => {
     return Math.min(Math.floor(parsed), MAX_LIMIT);
 };
 const toUiStatus = (status) => {
-    return status === enums_1.UserStatus.ACTIVE ? "Active" : "Inactive";
+    if (status === enums_1.UserStatus.ACTIVE) {
+        return "Active";
+    }
+    if (status === enums_1.UserStatus.INACTIVE) {
+        return "Inactive";
+    }
+    if (status === enums_1.UserStatus.TERMINATED) {
+        return "Terminated";
+    }
+    return "Inactive";
 };
 const toDbStatuses = (statusFilters) => {
     const normalized = new Set(statusFilters.map((status) => status.toLowerCase()));
@@ -1436,7 +1445,9 @@ router.post(`/add-employee/verify-bank`, async (req, res) => {
     try {
         const { id_number, ifsc } = req.body;
         if (!id_number || !ifsc) {
-            return res.status(400).json({ message: "ID Number and IFSC are required" });
+            return res
+                .status(400)
+                .json({ message: "ID Number and IFSC are required" });
         }
         const response = await fetch("https://api.quickekyc.com/api/v1/bank-verification", {
             method: "POST",
@@ -1499,6 +1510,95 @@ router.post(`/uploads/presign-temp`, async (req, res) => {
     }
     catch (error) {
         console.error("Error generating presigned URL:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/disable-employee`, async (req, res) => {
+    try {
+        const { employeeEncID } = req.body;
+        if (!employeeEncID) {
+            return res.status(400).json({ message: "employeeEncID is required" });
+        }
+        const user = await prisma_1.prisma.user.findFirst({
+            where: {
+                id: employeeEncID,
+            },
+        });
+        if (!user) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+        await prisma_1.prisma.user.update({
+            where: {
+                id: employeeEncID,
+            },
+            data: {
+                status: enums_1.UserStatus.INACTIVE,
+            },
+        });
+        return res.status(200).json({ message: "Employee disabled successfully" });
+    }
+    catch (error) {
+        console.error("Error disabling employee:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/enable-employee`, async (req, res) => {
+    try {
+        const { employeeEncID } = req.body;
+        if (!employeeEncID) {
+            return res.status(400).json({ message: "employeeEncID is required" });
+        }
+        const user = await prisma_1.prisma.user.findFirst({
+            where: {
+                id: employeeEncID,
+            },
+        });
+        if (!user) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+        await prisma_1.prisma.user.update({
+            where: {
+                id: employeeEncID,
+            },
+            data: {
+                status: enums_1.UserStatus.ACTIVE,
+                dateOfTermination: null,
+            },
+        });
+        return res.status(200).json({ message: "Employee enabled successfully" });
+    }
+    catch (error) {
+        console.error("Error enabling employee:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/terminate-employee`, async (req, res) => {
+    try {
+        const { employeeEncID } = req.body;
+        if (!employeeEncID) {
+            return res.status(400).json({ message: "employeeEncID is required" });
+        }
+        const user = await prisma_1.prisma.user.findFirst({
+            where: {
+                id: employeeEncID,
+            },
+        });
+        if (!user) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+        await prisma_1.prisma.user.update({
+            where: {
+                id: employeeEncID,
+            },
+            data: {
+                status: enums_1.UserStatus.TERMINATED,
+                dateOfTermination: new Date(),
+            },
+        });
+        return res.status(200).json({ message: "Employee terminated successfully" });
+    }
+    catch (error) {
+        console.error("Error terminating employee:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 });

@@ -33,7 +33,6 @@ const App = () => {
   const location = useLocation();
   return (
     <>
-      <AnimatePresence mode="popLayout" initial={false}>
         <Routes location={location} key={location.pathname}>
           {/* Public Routes */}
           <Route path="/" element={<Navigate to="/login" />} />
@@ -78,7 +77,7 @@ const App = () => {
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </AnimatePresence>
+      
     </>
   );
 };

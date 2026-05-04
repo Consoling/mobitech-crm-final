@@ -126,8 +126,17 @@ const parseLimit = (input: unknown): number => {
   return Math.min(Math.floor(parsed), MAX_LIMIT);
 };
 
-const toUiStatus = (status: UserStatus): "Active" | "Inactive" => {
-  return status === UserStatus.ACTIVE ? "Active" : "Inactive";
+const toUiStatus = (status: UserStatus): "Active" | "Inactive" | "Terminated" => {
+  if (status === UserStatus.ACTIVE) {
+    return "Active";
+  }
+  if (status === UserStatus.INACTIVE) {
+    return "Inactive";
+  } 
+  if(status === UserStatus.TERMINATED) {
+  return "Terminated";
+  }
+  return "Inactive";
 };
 
 const toDbStatuses = (statusFilters: string[]): UserStatus[] => {
@@ -1644,35 +1653,43 @@ router.post(`/add-employee/verify-upi`, async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
-router.post(`/add-employee/verify-bank`, async (req: Request, res: Response) => {
-  try {
-    const { id_number, ifsc } = req.body as { id_number: string; ifsc: string };
-    if (!id_number || !ifsc) {
-      return res.status(400).json({ message: "ID Number and IFSC are required" });
-    }
+router.post(
+  `/add-employee/verify-bank`,
+  async (req: Request, res: Response) => {
+    try {
+      const { id_number, ifsc } = req.body as {
+        id_number: string;
+        ifsc: string;
+      };
+      if (!id_number || !ifsc) {
+        return res
+          .status(400)
+          .json({ message: "ID Number and IFSC are required" });
+      }
 
-    const response = await fetch(
-      "https://api.quickekyc.com/api/v1/bank-verification",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "https://api.quickekyc.com/api/v1/bank-verification",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            key: SYS_ENV.QUICKEKYC_KEY,
+            id_number,
+            ifsc,
+          }),
         },
-        body: JSON.stringify({
-          key: SYS_ENV.QUICKEKYC_KEY,
-          id_number,
-          ifsc,
-        }),
-      },
-    );
+      );
 
-    const data = await response.json();
-    return res.status(200).json(data);
-  } catch (error) {
-    console.error("Error verifying bank details:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
-  }
-});
+      const data = await response.json();
+      return res.status(200).json(data);
+    } catch (error) {
+      console.error("Error verifying bank details:", error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  },
+);
 
 router.post(`/uploads/presign-temp`, async (req: Request, res: Response) => {
   try {
@@ -1734,6 +1751,99 @@ router.post(`/uploads/presign-temp`, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error generating presigned URL:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.post(`/disable-employee`, async (req: Request, res: Response) => {
+  try {
+    const { employeeEncID } = req.body as { employeeEncID: string };
+    if (!employeeEncID) {
+      return res.status(400).json({ message: "employeeEncID is required" });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        id: employeeEncID,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    await prisma.user.update({
+      where: {
+        id: employeeEncID,
+      },
+      data: {
+        status: UserStatus.INACTIVE,
+      },
+    });
+	return res.status(200).json({ message: "Employee disabled successfully" });
+  } catch (error) {
+    console.error("Error disabling employee:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+router.post(`/enable-employee`, async (req: Request, res: Response) => {
+  try {
+    const { employeeEncID } = req.body as { employeeEncID: string };
+    if (!employeeEncID) {
+      return res.status(400).json({ message: "employeeEncID is required" });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        id: employeeEncID,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    await prisma.user.update({
+      where: {
+        id: employeeEncID,
+      },
+      data: {
+        status: UserStatus.ACTIVE,
+		dateOfTermination: null,
+      },
+    });
+	return res.status(200).json({ message: "Employee enabled successfully" });
+  } catch (error) {
+    console.error("Error enabling employee:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+router.post(`/terminate-employee`, async (req: Request, res: Response) => {
+  try {
+    const { employeeEncID } = req.body as { employeeEncID: string };
+    if (!employeeEncID) {
+      return res.status(400).json({ message: "employeeEncID is required" });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        id: employeeEncID,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    await prisma.user.update({
+      where: {
+        id: employeeEncID,
+      },
+      data: {
+        status: UserStatus.TERMINATED,
+		dateOfTermination: new Date(),
+      },
+    });
+	return res.status(200).json({ message: "Employee terminated successfully" });
+  } catch (error) {
+    console.error("Error terminating employee:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });

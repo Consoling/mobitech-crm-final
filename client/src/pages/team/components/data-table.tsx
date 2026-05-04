@@ -26,6 +26,7 @@ import {
 } from "@tanstack/react-table";
 import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { z } from "zod";
+import toast from "react-hot-toast";
 
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -41,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import { apiJson, jsonHeaders } from "@/lib/api";
 import { Label } from "@/components/ui/label";
 import {
   Sheet,
@@ -168,12 +170,81 @@ const isDateWithinRange = (dateValue: string, range: string): boolean => {
 type ActionMenuCellProps = {
   entityType: "employee" | "store";
   entityLabel: string;
+  entityId?: string | number;
+  entityStatus?: string;
+  onDataChange?: () => void;
   onEdit?: () => void;
 };
 
-const ActionMenuCell = ({ entityType, entityLabel, onEdit }: ActionMenuCellProps) => {
+const ActionMenuCell = ({
+  entityType,
+  entityLabel,
+  entityId,
+  entityStatus,
+  onDataChange,
+  onEdit,
+}: ActionMenuCellProps) => {
   const [isDisableDialogOpen, setIsDisableDialogOpen] = React.useState(false);
   const [isTerminateDialogOpen, setIsTerminateDialogOpen] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const isInactiveEmployee = entityType === "employee" && entityStatus === "Inactive" || entityStatus === "Terminated";
+
+  const handleDisableEmployee = async () => {
+    if (entityType !== "employee" || entityId === undefined || entityId === null) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const endpoint = isInactiveEmployee ? "/team/enable-employee" : "/team/disable-employee";
+      const { response, data } = await apiJson<{ message?: string }>(endpoint, {
+        method: "POST",
+        headers: jsonHeaders,
+        body: JSON.stringify({ employeeEncID: String(entityId) }),
+      });
+
+      if (!response.ok) {
+        toast.error(data?.message ?? `Failed to ${isInactiveEmployee ? "enable" : "disable"} employee.`);
+        return;
+      }
+
+      toast.success(data?.message ?? `Employee ${isInactiveEmployee ? "enabled" : "disabled"} successfully.`);
+      setIsDisableDialogOpen(false);
+      onDataChange?.();
+    } catch (error) {
+      toast.error(`Unable to ${isInactiveEmployee ? "enable" : "disable"} employee right now.`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleTerminateEmployee = async () => {
+    if (entityType !== "employee" || entityId === undefined || entityId === null) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { response, data } = await apiJson<{ message?: string }>("/team/terminate-employee", {
+        method: "POST",
+        headers: jsonHeaders,
+        body: JSON.stringify({ employeeEncID: String(entityId) }),
+      });
+
+      if (!response.ok) {
+        toast.error(data?.message ?? "Failed to terminate employee.");
+        return;
+      }
+
+      toast.success(data?.message ?? "Employee terminated successfully.");
+      setIsTerminateDialogOpen(false);
+      onDataChange?.();
+    } catch (error) {
+      toast.error("Unable to terminate employee right now.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -201,49 +272,57 @@ const ActionMenuCell = ({ entityType, entityLabel, onEdit }: ActionMenuCellProps
           >
             Edit
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={(event) => {
-              event.preventDefault();
-              setIsDisableDialogOpen(true);
-            }}
-          >
-            Disable
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={(event) => {
-              event.preventDefault();
-              setIsTerminateDialogOpen(true);
-            }}
-          >
-            Terminate
-          </DropdownMenuItem>
+          {entityType === "employee" && (
+            <>
+              <DropdownMenuItem
+              
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setIsDisableDialogOpen(true);
+                }}
+              >
+                {isInactiveEmployee ? "Enable" : "Disable"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+              className={entityStatus === "Terminated" ? "hidden" : "text-red-600"}
+                variant="destructive"
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setIsTerminateDialogOpen(true);
+                }}
+              >
+                Terminate
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
       <ConfirmDialog
         open={isDisableDialogOpen}
         onOpenChange={setIsDisableDialogOpen}
-        onConfirm={() => {
-          setIsDisableDialogOpen(false);
-        }}
-        title={`Disable ${entityType}`}
-        description={`Are you sure you want to disable ${entityLabel}? You can re-enable it later.`}
-        confirmText="Disable"
+        onConfirm={handleDisableEmployee}
+        title={isInactiveEmployee ? `Enable ${entityType}` : `Disable ${entityType}`}
+        description={
+          isInactiveEmployee
+            ? `Are you sure you want to enable ${entityLabel}?`
+            : `Are you sure you want to disable ${entityLabel}? You can re-enable it later.`
+        }
+        confirmText={isInactiveEmployee ? "Enable" : "Disable"}
         cancelText="Cancel"
+        confirmDisabled={isSubmitting}
       />
 
       <ConfirmDialog
         open={isTerminateDialogOpen}
         onOpenChange={setIsTerminateDialogOpen}
-        onConfirm={() => {
-          setIsTerminateDialogOpen(false);
-        }}
+        onConfirm={handleTerminateEmployee}
         title={`Terminate ${entityType}`}
         description={`Are you sure you want to terminate ${entityLabel}? This action should be used carefully.`}
         confirmText="Terminate"
         cancelText="Cancel"
+        confirmDisabled={isSubmitting}
       />
     </>
   );
@@ -251,6 +330,7 @@ const ActionMenuCell = ({ entityType, entityLabel, onEdit }: ActionMenuCellProps
 
 const createEmployeeColumns = (
   navigate: NavigateFunction,
+  onDataChange?: () => void,
 ): ColumnDef<z.infer<typeof schema>>[] => [
   {
     accessorKey: "view",
@@ -403,6 +483,9 @@ const createEmployeeColumns = (
       <ActionMenuCell
         entityType="employee"
         entityLabel={row.original.name}
+        entityId={row.original.id}
+        entityStatus={row.original.status}
+        onDataChange={onDataChange}
         onEdit={() =>
           navigate(
             `/manage-team/edit-employee/${encodeURIComponent(String(row.original.employeeId))}`,
@@ -415,6 +498,7 @@ const createEmployeeColumns = (
 
 const createStoreColumns = (
   navigate: NavigateFunction,
+  onDataChange?: () => void,
 ): ColumnDef<z.infer<typeof storeSchema>>[] => [
   {
     accessorKey: "view",
@@ -556,6 +640,8 @@ const createStoreColumns = (
       <ActionMenuCell
         entityType="store"
         entityLabel={row.original.storeName}
+        entityId={row.original.id}
+        onDataChange={onDataChange}
         onEdit={() =>
           navigate(
             `/manage-team/edit-store/${encodeURIComponent(String(row.original.storeId))}`,
@@ -569,20 +655,22 @@ const createStoreColumns = (
 export function EmployeeDataTable({
   data: initialData,
   onTabChange,
+  onDataChange,
 }: {
   data: { employees: z.infer<typeof schema>[]; stores: z.infer<typeof storeSchema>[] };
   onTabChange?: (tab: "employees" | "stores") => void;
+  onDataChange?: () => void;
 }) {
 
   
   const navigate = useNavigate();
   const employeeColumns = React.useMemo(
-    () => createEmployeeColumns(navigate),
-    [navigate],
+    () => createEmployeeColumns(navigate, onDataChange),
+    [navigate, onDataChange],
   );
   const storeColumns = React.useMemo(
-    () => createStoreColumns(navigate),
-    [navigate],
+    () => createStoreColumns(navigate, onDataChange),
+    [navigate, onDataChange],
   );
   const employeeData = initialData.employees;
   const storeData = initialData.stores;

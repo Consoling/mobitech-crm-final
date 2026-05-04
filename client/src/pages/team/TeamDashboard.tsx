@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { apiJson } from "@/lib/api";
 import { Download, UsersRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { EmployeeDataTable } from "./components/data-table";
 import TeamEntitySearch from "./components/TeamEntitySearch";
 
@@ -86,86 +86,81 @@ const TeamDashboard = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const loadSummary = async () => {
-      try {
-        const summaryPath = "/team/summary";
-        const summaryResult = await apiJson<TeamSummaryResponse>(summaryPath);
+  const reloadSummary = useCallback(async () => {
+    try {
+      const summaryResult = await apiJson<TeamSummaryResponse>("/team/summary");
 
-        if (summaryResult.response.ok && summaryResult.data?.data) {
-          setCardsMetadata({
-            actUsers: summaryResult.data.data.activeUsers,
-            inactUsers: summaryResult.data.data.inactiveUsers,
-            TEmps: summaryResult.data.data.totalEmployees,
-            TStores: summaryResult.data.data.totalStores,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to load team summary:", error);
+      if (summaryResult.response.ok && summaryResult.data?.data) {
+        setCardsMetadata({
+          actUsers: summaryResult.data.data.activeUsers,
+          inactUsers: summaryResult.data.data.inactiveUsers,
+          TEmps: summaryResult.data.data.totalEmployees,
+          TStores: summaryResult.data.data.totalStores,
+        });
       }
-    };
-
-    void loadSummary();
+    } catch (error) {
+      console.error("Failed to load team summary:", error);
+    }
   }, []);
 
+  const reloadTeamData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+      const employeesPath = `/team/employees?page=1&limit=200${searchTerm.trim() ? `&search=${encodeURIComponent(searchTerm.trim())}` : ""}`;
+      const storesPath = `/team/stores?page=1&limit=200${searchTerm.trim() ? `&search=${encodeURIComponent(searchTerm.trim())}` : ""}`;
+
+      const [employeesResult, storesResult] = await Promise.all([
+        apiJson<EmployeeListResponse>(employeesPath),
+        apiJson<StoreListResponse>(storesPath),
+      ]);
+
+      const employees = (employeesResult.data?.items ?? []).map((employee) => ({
+        id: employee.id,
+        view: "view",
+        name: employee.name,
+        email: employee.email ?? "-",
+        employeeId: employee.employeeId ?? "-",
+        phone: employee.phone,
+        createdAt: employee.createdAt,
+        role: employee.role,
+        status: employee.status,
+        avatarUrl: employee.avatar?.url ?? employee.avatar?.key ?? null,
+      }));
+
+      const stores = (storesResult.data?.items ?? []).map((store) => ({
+        id: store.id,
+        view: "view",
+        ownerName: store.ownerName,
+        storeId: store.storeId,
+        storeName: store.storeName,
+        ownerPhone: store.ownerPhone,
+        address: store.address ?? "-",
+        createdAt: store.createdAt,
+        status: store.status,
+      }));
+
+      setTeamTableData({ employees, stores });
+    } catch (error) {
+      console.error("Failed to load team list data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchTerm]);
+
   useEffect(() => {
-    let isActive = true;
+    void reloadSummary();
+  }, [reloadSummary]);
+
+  useEffect(() => {
     const debounceTimer = window.setTimeout(async () => {
-      try {
-        setIsLoading(true);
-
-        const employeesPath = `/team/employees?page=1&limit=200${searchTerm.trim() ? `&search=${encodeURIComponent(searchTerm.trim())}` : ""}`;
-        const storesPath = `/team/stores?page=1&limit=200${searchTerm.trim() ? `&search=${encodeURIComponent(searchTerm.trim())}` : ""}`;
-
-        const [employeesResult, storesResult] = await Promise.all([
-          apiJson<EmployeeListResponse>(employeesPath),
-          apiJson<StoreListResponse>(storesPath),
-        ]);
-
-        if (!isActive) {
-          return;
-        }
-
-        const employees = (employeesResult.data?.items ?? []).map((employee) => ({
-          id: employee.id,
-          view: "view",
-          name: employee.name,
-          email: employee.email ?? "-",
-          employeeId: employee.employeeId ?? "-",
-          phone: employee.phone,
-          createdAt: employee.createdAt,
-          role: employee.role,
-          status: employee.status,
-          avatarUrl: employee.avatar?.url ?? employee.avatar?.key ?? null,
-        }));
-
-        const stores = (storesResult.data?.items ?? []).map((store) => ({
-          id: store.id,
-          view: "view",
-          ownerName: store.ownerName,
-          storeId: store.storeId,
-          storeName: store.storeName,
-          ownerPhone: store.ownerPhone,
-          address: store.address ?? "-",
-          createdAt: store.createdAt,
-          status: store.status,
-        }));
-
-        setTeamTableData({ employees, stores });
-      } catch (error) {
-        console.error("Failed to load team list data:", error);
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
-      }
+      await reloadTeamData();
     }, 350);
 
     return () => {
-      isActive = false;
       window.clearTimeout(debounceTimer);
     };
-  }, [searchTerm]);
+  }, [reloadTeamData, searchTerm]);
   return (
     <div className="px-6 py-6">
       <div className="flex items-center justify-between gap-4 mb-6 max-[550px]:flex-col max-[550px]:items-start">
@@ -321,7 +316,14 @@ const TeamDashboard = () => {
 
       {/* Employee List Layer */}
       <div className="mt-10">
-        <EmployeeDataTable data={teamTableData} onTabChange={setActiveTab} />
+        <EmployeeDataTable
+          data={teamTableData}
+          onTabChange={setActiveTab}
+          onDataChange={() => {
+            void reloadSummary();
+            void reloadTeamData();
+          }}
+        />
         {isLoading && (
           <p className="mt-3 text-sm text-[#62748E]">Loading latest team data...</p>
         )}
