@@ -248,7 +248,7 @@ router.post(`/get-qc-reports`, async (req: Request, res: Response) => {
     });
 
     const qcReportCleaned = qcReports.map((report) => {
-      console.log(report);
+      
       const deviceInfo = report.deviceInfo as unknown as DeviceInfoNew;
 
       // Categorize test results

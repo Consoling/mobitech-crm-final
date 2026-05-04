@@ -1,6 +1,10 @@
 import crypto from "crypto";
 import express, { Request, Response } from "express";
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { prisma } from "../config/prisma";
 import { redisClient } from "../config/redis";
@@ -51,6 +55,21 @@ const S3_PRESIGNED_URL_EXPIRES_IN_SECONDS = Number.isFinite(
   : 900;
 
 const s3Client = S3_REGION ? new S3Client({ region: S3_REGION }) : null;
+const TEMP_UPLOAD_FIELDS = new Set([
+  "profilePicture",
+  "aadharFront",
+  "aadharBack",
+  "contractDocument",
+  "qualificationDocument",
+  "vehicleImageFront",
+  "vehicleImageBack",
+]);
+const TEMP_UPLOAD_CONTENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "application/pdf",
+]);
+const TEMP_UPLOAD_MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
 const parseStringArray = (input: unknown): string[] => {
   if (Array.isArray(input)) {
@@ -68,6 +87,27 @@ const parseStringArray = (input: unknown): string[] => {
   }
 
   return [];
+};
+
+const getExtensionFromUpload = (fileName: string, contentType: string) => {
+  const extension = fileName.split(".").pop()?.toLowerCase();
+  if (extension && /^[a-z0-9]{1,8}$/.test(extension)) {
+    return extension;
+  }
+
+  if (contentType === "image/jpeg") {
+    return "jpg";
+  }
+
+  if (contentType === "image/png") {
+    return "png";
+  }
+
+  if (contentType === "application/pdf") {
+    return "pdf";
+  }
+
+  return "bin";
 };
 
 const parsePage = (input: unknown): number => {
@@ -1438,7 +1478,6 @@ router.post(`/add-employee/send-otp`, async (req: Request, res: Response) => {
         medium: "whatsapp",
       });
     }
-
     response2 = await fetch(`${SYS_ENV.FAST2SMS_API_ENDPOINT!}`, {
       method: "POST",
       headers: {
@@ -1631,6 +1670,70 @@ router.post(`/add-employee/verify-bank`, async (req: Request, res: Response) => 
     return res.status(200).json(data);
   } catch (error) {
     console.error("Error verifying bank details:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.post(`/uploads/presign-temp`, async (req: Request, res: Response) => {
+  try {
+    if (!s3Client || !S3_BUCKET_NAME) {
+      return res.status(500).json({ message: "S3 is not configured" });
+    }
+
+    const { field, fileName, contentType, size } = req.body as {
+      field?: string;
+      fileName?: string;
+      contentType?: string;
+      size?: number;
+    };
+
+    if (!field || !TEMP_UPLOAD_FIELDS.has(field)) {
+      return res.status(400).json({ message: "Invalid upload field" });
+    }
+
+    if (!fileName || typeof fileName !== "string") {
+      return res.status(400).json({ message: "fileName is required" });
+    }
+
+    if (!contentType || !TEMP_UPLOAD_CONTENT_TYPES.has(contentType)) {
+      return res.status(400).json({ message: "Unsupported file type" });
+    }
+
+    const parsedSize = Number(size);
+    if (
+      !Number.isFinite(parsedSize) ||
+      parsedSize <= 0 ||
+      parsedSize > TEMP_UPLOAD_MAX_SIZE_BYTES
+    ) {
+      return res.status(400).json({ message: "Invalid file size" });
+    }
+
+    const draftId = crypto.randomUUID();
+    const fileId = crypto.randomUUID();
+    const extension = getExtensionFromUpload(fileName, contentType);
+    const key = `temp/add-employee/${draftId}/${field}-${fileId}.${extension}`;
+
+    const uploadUrl = await getSignedUrl(
+      s3Client,
+      new PutObjectCommand({
+        Bucket: S3_BUCKET_NAME,
+        Key: key,
+        ContentType: contentType,
+        Metadata: {
+          originalFileName: fileName.slice(0, 200),
+          uploadField: field,
+        },
+      }),
+      { expiresIn: S3_PRESIGNED_URL_EXPIRES_IN_SECONDS },
+    );
+
+    return res.status(200).json({
+      uploadUrl,
+      key,
+      expiresIn: S3_PRESIGNED_URL_EXPIRES_IN_SECONDS,
+    });
+  } catch (error) {
+    console.error("Error generating presigned URL:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });

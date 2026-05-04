@@ -48,6 +48,21 @@ const S3_PRESIGNED_URL_EXPIRES_IN_SECONDS = Number.isFinite(env_1.SYS_ENV.AWS_S3
     ? Math.max(60, env_1.SYS_ENV.AWS_S3_PRESIGNED_URL_EXPIRES_IN_SECONDS)
     : 900;
 const s3Client = S3_REGION ? new client_s3_1.S3Client({ region: S3_REGION }) : null;
+const TEMP_UPLOAD_FIELDS = new Set([
+    "profilePicture",
+    "aadharFront",
+    "aadharBack",
+    "contractDocument",
+    "qualificationDocument",
+    "vehicleImageFront",
+    "vehicleImageBack",
+]);
+const TEMP_UPLOAD_CONTENT_TYPES = new Set([
+    "image/jpeg",
+    "image/png",
+    "application/pdf",
+]);
+const TEMP_UPLOAD_MAX_SIZE_BYTES = 10 * 1024 * 1024;
 const parseStringArray = (input) => {
     if (Array.isArray(input)) {
         return input
@@ -62,6 +77,22 @@ const parseStringArray = (input) => {
             .filter(Boolean);
     }
     return [];
+};
+const getExtensionFromUpload = (fileName, contentType) => {
+    const extension = fileName.split(".").pop()?.toLowerCase();
+    if (extension && /^[a-z0-9]{1,8}$/.test(extension)) {
+        return extension;
+    }
+    if (contentType === "image/jpeg") {
+        return "jpg";
+    }
+    if (contentType === "image/png") {
+        return "png";
+    }
+    if (contentType === "application/pdf") {
+        return "pdf";
+    }
+    return "bin";
 };
 const parsePage = (input) => {
     const parsed = Number(input);
@@ -1423,6 +1454,51 @@ router.post(`/add-employee/verify-bank`, async (req, res) => {
     }
     catch (error) {
         console.error("Error verifying bank details:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/uploads/presign-temp`, async (req, res) => {
+    try {
+        if (!s3Client || !S3_BUCKET_NAME) {
+            return res.status(500).json({ message: "S3 is not configured" });
+        }
+        const { field, fileName, contentType, size } = req.body;
+        if (!field || !TEMP_UPLOAD_FIELDS.has(field)) {
+            return res.status(400).json({ message: "Invalid upload field" });
+        }
+        if (!fileName || typeof fileName !== "string") {
+            return res.status(400).json({ message: "fileName is required" });
+        }
+        if (!contentType || !TEMP_UPLOAD_CONTENT_TYPES.has(contentType)) {
+            return res.status(400).json({ message: "Unsupported file type" });
+        }
+        const parsedSize = Number(size);
+        if (!Number.isFinite(parsedSize) ||
+            parsedSize <= 0 ||
+            parsedSize > TEMP_UPLOAD_MAX_SIZE_BYTES) {
+            return res.status(400).json({ message: "Invalid file size" });
+        }
+        const draftId = crypto_1.default.randomUUID();
+        const fileId = crypto_1.default.randomUUID();
+        const extension = getExtensionFromUpload(fileName, contentType);
+        const key = `temp/add-employee/${draftId}/${field}-${fileId}.${extension}`;
+        const uploadUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3Client, new client_s3_1.PutObjectCommand({
+            Bucket: S3_BUCKET_NAME,
+            Key: key,
+            ContentType: contentType,
+            Metadata: {
+                originalFileName: fileName.slice(0, 200),
+                uploadField: field,
+            },
+        }), { expiresIn: S3_PRESIGNED_URL_EXPIRES_IN_SECONDS });
+        return res.status(200).json({
+            uploadUrl,
+            key,
+            expiresIn: S3_PRESIGNED_URL_EXPIRES_IN_SECONDS,
+        });
+    }
+    catch (error) {
+        console.error("Error generating presigned URL:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 });

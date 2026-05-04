@@ -199,7 +199,6 @@ router.post(`/get-qc-reports`, async (req, res) => {
             },
         });
         const qcReportCleaned = qcReports.map((report) => {
-            console.log(report);
             const deviceInfo = report.deviceInfo;
             // Categorize test results
             const testResults = {

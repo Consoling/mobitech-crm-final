@@ -22,7 +22,7 @@ import {
   Upload,
   UsersRound,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import toast from "react-hot-toast";
@@ -92,6 +92,34 @@ const addEmployeeSchema = z.object({
 
 type AddEmployeeFormValues = z.infer<typeof addEmployeeSchema>;
 
+type TempUploadValue = {
+  key: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+};
+
+type PresignTempUploadResponse = {
+  uploadUrl: string;
+  key: string;
+};
+
+type UploadFieldName =
+  | "profilePicture"
+  | "aadharFront"
+  | "aadharBack"
+  | "contractDocument"
+  | "qualificationDocument"
+  | "vehicleImageFront"
+  | "vehicleImageBack";
+
+type UploadPreview = {
+  url: string;
+  fileName: string;
+  contentType: string;
+  status: "uploading" | "uploaded";
+};
+
 const employeeLabelClassName =
   "[font-family:Inter] text-[13px] font-medium leading-[145%] tracking-[0] align-middle text-[#344054]";
 
@@ -110,6 +138,12 @@ const AddEmployee = () => {
     useState("No file chosen");
   const [selectedVehicleImageBackName, setSelectedVehicleImageBackName] =
     useState("No file chosen");
+  const [uploadPreviews, setUploadPreviews] = useState<
+    Partial<Record<UploadFieldName, UploadPreview>>
+  >({});
+  const uploadPreviewsRef = useRef<
+    Partial<Record<UploadFieldName, UploadPreview>>
+  >({});
   const [isStoreComboboxOpen, setIsStoreComboboxOpen] = useState(false);
   const [storeSearch, setStoreSearch] = useState("");
   const [storeOptions, setStoreOptions] = useState<
@@ -203,6 +237,166 @@ const AddEmployee = () => {
   const onSubmit = (values: AddEmployeeFormValues) => {
     console.log("Add employee form values:", values);
   };
+
+  const uploadTempFile = async (
+    fieldName: string,
+    file: File,
+  ): Promise<TempUploadValue> => {
+    const { response, data } = await apiJson<PresignTempUploadResponse>(
+      "/team/uploads/presign-temp",
+      {
+        method: "POST",
+        headers: jsonHeaders,
+        body: JSON.stringify({
+          field: fieldName,
+          fileName: file.name,
+          contentType: file.type,
+          size: file.size,
+        }),
+      },
+    );
+
+    if (!response.ok || !data?.uploadUrl || !data?.key) {
+      throw new Error("Failed to prepare upload");
+    }
+
+    const uploadResponse = await fetch(data.uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type,
+      },
+      body: file,
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error("Failed to upload file");
+    }
+
+    return {
+      key: data.key,
+      fileName: file.name,
+      contentType: file.type,
+      size: file.size,
+    };
+  };
+
+  const handleTempUploadChange = async (
+    fieldName: UploadFieldName,
+    file: File | undefined,
+    setSelectedFileName: (fileName: string) => void,
+    onChange: (value: TempUploadValue | undefined) => void,
+    successMessage: string,
+    errorMessage: string,
+  ) => {
+    setSelectedFileName(file?.name ?? "No file chosen");
+
+    setUploadPreviews((prev) => {
+      const previous = prev[fieldName];
+      if (previous?.url) {
+        URL.revokeObjectURL(previous.url);
+      }
+
+      if (!file) {
+        const next = { ...prev };
+        delete next[fieldName];
+        return next;
+      }
+
+      return {
+        ...prev,
+        [fieldName]: {
+          url: URL.createObjectURL(file),
+          fileName: file.name,
+          contentType: file.type,
+          status: "uploading",
+        },
+      };
+    });
+
+    if (!file) {
+      onChange(undefined);
+      return;
+    }
+
+    try {
+      const uploaded = await uploadTempFile(fieldName, file);
+      onChange(uploaded);
+      setUploadPreviews((prev) => {
+        const previous = prev[fieldName];
+        if (!previous) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [fieldName]: {
+            ...previous,
+            status: "uploaded",
+          },
+        };
+      });
+      toast.success(successMessage);
+    } catch (error) {
+      console.error(error);
+      onChange(undefined);
+      setSelectedFileName("No file chosen");
+      setUploadPreviews((prev) => {
+        const previous = prev[fieldName];
+        if (previous?.url) {
+          URL.revokeObjectURL(previous.url);
+        }
+        const next = { ...prev };
+        delete next[fieldName];
+        return next;
+      });
+      toast.error(errorMessage);
+    }
+  };
+
+  const renderUploadPreview = (fieldName: UploadFieldName) => {
+    const preview = uploadPreviews[fieldName];
+    if (!preview) {
+      return null;
+    }
+
+    return (
+      <div className="mt-3 flex w-full max-w-127.5 items-center gap-3 rounded-[6px] border border-[#E4E7EC] bg-[#F9FAFB] p-3">
+        {preview.contentType.startsWith("image/") ? (
+          <img
+            src={preview.url}
+            alt={preview.fileName}
+            className="h-16 w-16 shrink-0 rounded-[6px] object-cover"
+          />
+        ) : (
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[6px] bg-white text-xs font-semibold text-[#667085]">
+            FILE
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-[#101828]">
+            {preview.fileName}
+          </p>
+          <p className="text-xs text-[#667085]">
+            {preview.status === "uploading" ? "Uploading..." : "Uploaded"}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    uploadPreviewsRef.current = uploadPreviews;
+  }, [uploadPreviews]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(uploadPreviewsRef.current).forEach((preview) => {
+        if (preview?.url) {
+          URL.revokeObjectURL(preview.url);
+        }
+      });
+    };
+  }, []);
 
   useEffect(() => {
     if (!isStoreComboboxOpen || storeOptions.length > 0) {
@@ -448,7 +642,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Profile picture
+                          Profile picture <p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -486,17 +680,21 @@ const AddEmployee = () => {
                                 type="file"
                                 accept="image/png,image/jpeg"
                                 className="hidden"
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0];
-                                  setSelectedProfileFileName(
-                                    file?.name ?? "No file chosen",
+                                onChange={async (event) => {
+                                  await handleTempUploadChange(
+                                    "profilePicture",
+                                    event.target.files?.[0],
+                                    setSelectedProfileFileName,
+                                    field.onChange,
+                                    "Profile picture uploaded.",
+                                    "Failed to upload profile picture.",
                                   );
-                                  field.onChange(file ?? undefined);
                                 }}
                               />
                             </div>
                           </div>
                         </FormControl>
+                        {renderUploadPreview("profilePicture")}
                         <p className="text-xs text-[#667185]">
                           Max size: 5MB. Supported formats: JPG, PNG
                         </p>
@@ -512,7 +710,7 @@ const AddEmployee = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className={employeeLabelClassName}>
-                            First Name
+                            First Name <p className="text-red-500">*</p>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -532,7 +730,7 @@ const AddEmployee = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className={employeeLabelClassName}>
-                            Last Name
+                            Last Name<p className="text-red-500">*</p>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -553,7 +751,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Email Address
+                          Email Address <p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -574,7 +772,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Phone Number
+                          Phone Number <p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <div className="flex h-14 w-full max-w-127.5 items-center gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-4 py-4 box-border">
@@ -909,7 +1107,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Password
+                          Password<p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -930,7 +1128,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Role type
+                          Role type<p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <div className="flex h-14 w-full max-w-127.5 items-center gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-2 py-4 box-border">
@@ -1036,7 +1234,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Aadhar Front
+                          Aadhar Front<p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -1074,17 +1272,21 @@ const AddEmployee = () => {
                                 type="file"
                                 accept="image/png,image/jpeg"
                                 className="hidden"
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0];
-                                  setSelectedAadharFrontFileName(
-                                    file?.name ?? "No file chosen",
+                                onChange={async (event) => {
+                                  await handleTempUploadChange(
+                                    "aadharFront",
+                                    event.target.files?.[0],
+                                    setSelectedAadharFrontFileName,
+                                    field.onChange,
+                                    "Aadhar front image uploaded.",
+                                    "Failed to upload Aadhar front image.",
                                   );
-                                  field.onChange(file ?? undefined);
                                 }}
                               />
                             </div>
                           </div>
                         </FormControl>
+                        {renderUploadPreview("aadharFront")}
                         <p className="text-xs text-[#667185]">
                           Max size: 5MB. Supported formats: JPG, PNG
                         </p>
@@ -1098,7 +1300,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Aadhar Back
+                          Aadhar Back <p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -1136,17 +1338,21 @@ const AddEmployee = () => {
                                 type="file"
                                 accept="image/png,image/jpeg"
                                 className="hidden"
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0];
-                                  setSelectedAadharBackFileName(
-                                    file?.name ?? "No file chosen",
+                                onChange={async (event) => {
+                                  await handleTempUploadChange(
+                                    "aadharBack",
+                                    event.target.files?.[0],
+                                    setSelectedAadharBackFileName,
+                                    field.onChange,
+                                    "Aadhar back image uploaded.",
+                                    "Failed to upload Aadhar back image.",
                                   );
-                                  field.onChange(file ?? undefined);
                                 }}
                               />
                             </div>
                           </div>
                         </FormControl>
+                        {renderUploadPreview("aadharBack")}
                         <p className="text-xs text-[#667185]">
                           Max size: 5MB. Supported formats: JPG, PNG
                         </p>
@@ -1257,7 +1463,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Payment Type
+                          Payment Type <p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <>
@@ -1320,7 +1526,7 @@ const AddEmployee = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className={employeeLabelClassName}>
-                              Bank Name
+                              Bank Name <p className="text-red-500">*</p>
                             </FormLabel>
                             <FormControl>
                               <Popover
@@ -1332,8 +1538,12 @@ const AddEmployee = () => {
                                   }
                                 }}
                               >
-                                <PopoverTrigger asChild
-                                disabled={form.watch("isBankVerified") || isVerifyingBank}
+                                <PopoverTrigger
+                                  asChild
+                                  disabled={
+                                    form.watch("isBankVerified") ||
+                                    isVerifyingBank
+                                  }
                                 >
                                   <Button
                                     type="button"
@@ -1410,12 +1620,15 @@ const AddEmployee = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className={employeeLabelClassName}>
-                              IFSC Code
+                              IFSC Code <p className="text-red-500">*</p>
                             </FormLabel>
                             <FormControl>
                               <Input
                                 {...field}
-                                readOnly={form.watch("isBankVerified") || isVerifyingBank}
+                                readOnly={
+                                  form.watch("isBankVerified") ||
+                                  isVerifyingBank
+                                }
                                 placeholder="Enter IFSC code"
                                 className="h-14 w-full max-w-127.5 rounded-[6px] border border-[#D0D5DD] px-4 py-4 text-base text-[#101828] placeholder:text-[#98A2B3] uppercase"
                               />
@@ -1431,12 +1644,15 @@ const AddEmployee = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className={employeeLabelClassName}>
-                              Account Number
+                              Account Number <p className="text-red-500">*</p>
                             </FormLabel>
                             <FormControl>
                               <Input
                                 {...field}
-                                readOnly={form.watch("isBankVerified") || isVerifyingBank}
+                                readOnly={
+                                  form.watch("isBankVerified") ||
+                                  isVerifyingBank
+                                }
                                 placeholder="Enter account number"
                                 className="h-14 w-full max-w-127.5 rounded-[6px] border border-[#D0D5DD] px-4 py-4 text-base text-[#101828] placeholder:text-[#98A2B3]"
                               />
@@ -1449,7 +1665,9 @@ const AddEmployee = () => {
                       <div className="flex justify-center mt-4">
                         <Button
                           type="button"
-                          disabled={isVerifyingBank || form.watch("isBankVerified")}
+                          disabled={
+                            isVerifyingBank || form.watch("isBankVerified")
+                          }
                           onClick={async () => {
                             const bankName = form.getValues().bankName;
                             const ifscCode = form.getValues().ifscCode;
@@ -1493,7 +1711,9 @@ const AddEmployee = () => {
                                 data.status === "success" &&
                                 data.data.account_exists
                               ) {
-                                setBeneficiaryName(data.data.name_at_bank || data.data.full_name);
+                                setBeneficiaryName(
+                                  data.data.name_at_bank || data.data.full_name,
+                                );
                                 form.setValue("isBankVerified", true);
                                 form.setValue(
                                   "beneficiaryName",
@@ -1516,14 +1736,15 @@ const AddEmployee = () => {
                             } finally {
                               setIsVerifyingBank(false);
                             }
-                         
                           }}
                           className="h-9 w-73  rounded-[10px] bg-[#00C950] px-6 text-sm font-semibold text-white hover:bg-[#29ca4c] disabled:cursor-not-allowed"
                         >
                           {isVerifyingBank ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : form.watch("isBankVerified") ? (
+                            "Verified"
                           ) : (
-                            form.watch("isBankVerified") ? "Verified" : "Verify"
+                            "Verify"
                           )}
                         </Button>
                       </div>
@@ -1561,7 +1782,7 @@ const AddEmployee = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className={employeeLabelClassName}>
-                              UPI ID / Number
+                              UPI ID / Number <p className="text-red-500">*</p>
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -1686,7 +1907,8 @@ const AddEmployee = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className={employeeLabelClassName}>
-                            Upload Contract / Agreement
+                            Upload Contract / Agreement{" "}
+                            <p className="text-red-500">*</p>
                           </FormLabel>
                           <FormControl>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -1724,21 +1946,25 @@ const AddEmployee = () => {
                                 <input
                                   id="employee-contract-document"
                                   type="file"
-                                  accept="image/png,image/jpeg"
+                                  accept="image/png,image/jpeg,application/pdf"
                                   className="hidden"
-                                  onChange={(event) => {
-                                    const file = event.target.files?.[0];
-                                    setSelectedContractFileName(
-                                      file?.name ?? "No file chosen",
+                                  onChange={async (event) => {
+                                    await handleTempUploadChange(
+                                      "contractDocument",
+                                      event.target.files?.[0],
+                                      setSelectedContractFileName,
+                                      field.onChange,
+                                      "Contract document uploaded.",
+                                      "Failed to upload contract document.",
                                     );
-                                    field.onChange(file ?? undefined);
                                   }}
                                 />
                               </div>
                             </div>
                           </FormControl>
+                          {renderUploadPreview("contractDocument")}
                           <p className="text-xs text-[#667185]">
-                            Max size: 5MB. Supported formats: JPG, PNG
+                            Max size: 5MB. Supported formats: JPG, PNG, PDF
                           </p>
                           <FormMessage />
                         </FormItem>
@@ -1788,21 +2014,25 @@ const AddEmployee = () => {
                                 <input
                                   id="employee-qualification-document"
                                   type="file"
-                                  accept="image/png,image/jpeg"
+                                  accept="image/png,image/jpeg,application/pdf"
                                   className="hidden"
-                                  onChange={(event) => {
-                                    const file = event.target.files?.[0];
-                                    setSelectedQualificationFileName(
-                                      file?.name ?? "No file chosen",
+                                  onChange={async (event) => {
+                                    await handleTempUploadChange(
+                                      "qualificationDocument",
+                                      event.target.files?.[0],
+                                      setSelectedQualificationFileName,
+                                      field.onChange,
+                                      "Qualification document uploaded.",
+                                      "Failed to upload qualification document.",
                                     );
-                                    field.onChange(file ?? undefined);
                                   }}
                                 />
                               </div>
                             </div>
                           </FormControl>
+                          {renderUploadPreview("qualificationDocument")}
                           <p className="text-xs text-[#667185]">
-                            Max size: 5MB. Supported formats: JPG, PNG
+                            Max size: 5MB. Supported formats: JPG, PNG, PDF
                           </p>
                           <FormMessage />
                         </FormItem>
@@ -1854,17 +2084,21 @@ const AddEmployee = () => {
                                   type="file"
                                   accept="image/png,image/jpeg"
                                   className="hidden"
-                                  onChange={(event) => {
-                                    const file = event.target.files?.[0];
-                                    setSelectedVehicleImageFrontName(
-                                      file?.name ?? "No file chosen",
+                                  onChange={async (event) => {
+                                    await handleTempUploadChange(
+                                      "vehicleImageFront",
+                                      event.target.files?.[0],
+                                      setSelectedVehicleImageFrontName,
+                                      field.onChange,
+                                      "Vehicle front image uploaded.",
+                                      "Failed to upload vehicle front image.",
                                     );
-                                    field.onChange(file ?? undefined);
                                   }}
                                 />
                               </div>
                             </div>
                           </FormControl>
+                          {renderUploadPreview("vehicleImageFront")}
                           <p className="text-xs text-[#667185]">
                             Max size: 5MB. Supported formats: JPG, PNG
                           </p>
@@ -1918,17 +2152,21 @@ const AddEmployee = () => {
                                   type="file"
                                   accept="image/png,image/jpeg"
                                   className="hidden"
-                                  onChange={(event) => {
-                                    const file = event.target.files?.[0];
-                                    setSelectedVehicleImageBackName(
-                                      file?.name ?? "No file chosen",
+                                  onChange={async (event) => {
+                                    await handleTempUploadChange(
+                                      "vehicleImageBack",
+                                      event.target.files?.[0],
+                                      setSelectedVehicleImageBackName,
+                                      field.onChange,
+                                      "Vehicle back image uploaded.",
+                                      "Failed to upload vehicle back image.",
                                     );
-                                    field.onChange(file ?? undefined);
                                   }}
                                 />
                               </div>
                             </div>
                           </FormControl>
+                          {renderUploadPreview("vehicleImageBack")}
                           <p className="text-xs text-[#667185]">
                             Max size: 5MB. Supported formats: JPG, PNG
                           </p>
@@ -1948,7 +2186,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Date of Joining
+                          Date of Joining <p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <Popover>
@@ -2023,7 +2261,7 @@ const AddEmployee = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className={employeeLabelClassName}>
-                            Salary Amount
+                            Salary Amount <p className="text-red-500">*</p>
                           </FormLabel>
                           <FormControl>
                             <div className="relative h-14 w-full max-w-61.5">
@@ -2050,7 +2288,7 @@ const AddEmployee = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className={employeeLabelClassName}>
-                            Incentive
+                            Incentive <p className="text-red-500">*</p>
                           </FormLabel>
                           <FormControl>
                             <div className="relative h-14 w-full max-w-61.5">
@@ -2078,7 +2316,7 @@ const AddEmployee = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className={employeeLabelClassName}>
-                          Payout Date
+                          Payout Date <p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
                           <div className="flex h-14 w-full max-w-127.5 items-center gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-2 py-4 box-border">
