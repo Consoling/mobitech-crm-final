@@ -9,10 +9,10 @@ import mobitechCRMtext from "@/assets/id-card-assets/mobitech-crm.png";
 import idCardBack from "@/assets/id-card-assets/id-card-back.png";
 import idCardLogo from "@/assets/id-card-assets/id-card-logo.png";
 import { apiJson } from "@/lib/api";
-import { IconAddressBook, IconBuildingBank, IconBuildingStore, IconCalendar, IconCoinRupee, IconFile, IconId, IconIdBadge, IconIdBadge2, IconLogin2, IconPhone, IconRefresh, IconSticker2, IconUser, IconUserCircle, IconWallet, IconWorldMap } from "@tabler/icons-react";
+import { IconAddressBook, IconBuildingBank, IconBuildingStore, IconCalendar, IconCoinRupee, IconFile, IconId, IconIdBadge, IconIdBadge2, IconLabel, IconLogin2, IconPhone, IconRefresh, IconSticker2, IconUser, IconUserCircle, IconWallet, IconWorldMap } from "@tabler/icons-react";
 import { ArrowLeft, ArrowRight, Download, Eye, Loader2, UsersRound } from "lucide-react";
-
-import React, { useEffect, useMemo, useState } from "react";
+import Barcode from "react-barcode";
+import React, { useEffect,  useState } from "react";
 import { useRef } from "react";
 import { useParams } from "react-router-dom";
 
@@ -21,7 +21,7 @@ type EmployeeDetailsResponse = {
     employeeId: string;
     name: string;
     position: string;
-    status: "Active" | "Inactive";
+    status: "Active" | "Inactive" | "Terminated";
     email: string | null;
     phone: string;
     avatar: { key: string; url: string | null } | null;
@@ -89,21 +89,6 @@ const ViewEmployee = () => {
   const [idCardAvatarSrc, setIdCardAvatarSrc] = useState<string | undefined>(undefined);
   const idCardRef = useRef<HTMLDivElement | null>(null);
 
-  const idCardBarcodeSvg = useMemo(() => {
-    if (!details?.employeeId) {
-      return "";
-    }
-
-   
-  }, [details?.employeeId]);
-
-  const idCardBarcodeDataUrl = useMemo(() => {
-    if (!idCardBarcodeSvg) {
-      return "";
-    }
-
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(idCardBarcodeSvg)}`;
-  }, [idCardBarcodeSvg]);
 
   useEffect(() => {
     let isActive = true;
@@ -331,7 +316,7 @@ console.log("Employee details state:", details, "Loading:", isLoading, "Error:",
                   <span>Personal Details</span></div>
                 <div className="space-y-6 p-6 text-sm">
                   <div className="flex items-start gap-3">
-                    <IconPhone className="mt-1 h-5 w-5 text-[#98A2B3]" />
+                    <IconUser className="mt-1 h-5 w-5 text-[#98A2B3]" />
                     <div>
                       <p className="text-xs text-[#64748B]">First Name</p>
                       <p className="font-medium text-[#0F172B] text-sm">{details.personalDetails.firstName || "-"}</p>
@@ -549,10 +534,7 @@ console.log("Employee details state:", details, "Loading:", isLoading, "Error:",
                 </div>
 
                 <div className="space-y-0.5 text-left text-[8px] leading-tight text-[#000000]" style={{ marginTop: "12px" }}>
-                  <div className="grid grid-cols-[38px_1fr] items-center gap-0">
-                    <p className="text-left font-semibold uppercase text-[#F19118]">ID NO</p>
-                    <p className="text-left">: {details?.employeeId || "-"}</p>
-                  </div>
+               
                   <div className="grid grid-cols-[38px_1fr] items-center gap-0">
                     <p className="text-left font-semibold uppercase text-[#F19118]">DOB</p>
                     <p className="text-left">: DD/MM/YEAR</p>
@@ -572,15 +554,17 @@ console.log("Employee details state:", details, "Loading:", isLoading, "Error:",
                 </div>
 
                 <div className="flex justify-center pb-2" style={{ marginTop: "auto" }}>
-                  {idCardBarcodeDataUrl ? (
-                    <img
-                      src={idCardBarcodeDataUrl}
-                      alt={`Barcode for employee ID ${details?.employeeId || ""}`}
-                      className="h-5 w-31 max-w-35 object-contain"
-                    />
+                  {details?.employeeId ? (
+                    // <img
+                    //   src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(details.employeeId)}`}
+                    //   alt={`Barcode for employee ID ${details?.employeeId || ""}`}
+                    //   className="h-5 w-31 max-w-35 object-contain"
+                    // />
+
+                    <Barcode value={details.employeeId} format="CODE128" width={1.4} height={27} displayValue={false} background="transparent" />
                   ) : (
                     <div className="flex min-h-13 w-full max-w-35 items-center justify-center rounded-sm bg-white px-1 text-[9px] text-[#64748B]">
-                      Barcode unavailable
+                      Barcode unavailable 
                     </div>
                   )}
                 </div>
