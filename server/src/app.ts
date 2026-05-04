@@ -1,7 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import { SYS_ENV } from "./utils/env";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import morgan from "morgan";
 import { globalRateLimiter } from "./middlewares/rateLimiter";
 import { prisma } from "./config/prisma";
@@ -25,17 +25,31 @@ import getModelsByBrandRoute from "./routes/pickup_app_routes/get-models-by-bran
 import getIndividualModelDataRoute from "./routes/pickup_app_routes/get-individual-mode-data.route";
 import { connectDb } from "./lib/connectDb";
 const app = express();
+const allowedOrigins = Array.from(
+  new Set([
+    ...SYS_ENV.FRONTEND_URLS,
+    "https://www.mobitech-crm.in",
+    "https://mobitech-crm.in",
+  ]),
+);
+const corsOptions: CorsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+};
+
 app.set("trust proxy", true);
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
-app.use(
-  cors({
-    origin: SYS_ENV.FRONTEND_URLS,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  }),
-);
 app.use(morgan("dev"));
 app.use(globalRateLimiter);
 app.use(express.urlencoded({ extended: true }));

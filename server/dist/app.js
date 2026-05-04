@@ -28,15 +28,27 @@ const get_models_by_brand_route_1 = __importDefault(require("./routes/pickup_app
 const get_individual_mode_data_route_1 = __importDefault(require("./routes/pickup_app_routes/get-individual-mode-data.route"));
 const connectDb_1 = require("./lib/connectDb");
 const app = (0, express_1.default)();
+const allowedOrigins = Array.from(new Set([
+    ...env_1.SYS_ENV.FRONTEND_URLS,
+    "https://www.mobitech-crm.in",
+    "https://mobitech-crm.in",
+]));
+const corsOptions = {
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 204,
+};
 app.set("trust proxy", true);
+app.use((0, cors_1.default)(corsOptions));
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
-app.use((0, cors_1.default)({
-    origin: env_1.SYS_ENV.FRONTEND_URLS,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-}));
 app.use((0, morgan_1.default)("dev"));
 app.use(rateLimiter_1.globalRateLimiter);
 app.use(express_1.default.urlencoded({ extended: true }));
