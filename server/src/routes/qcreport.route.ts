@@ -21,6 +21,24 @@ interface TestResult {
 
 const router = express.Router();
 
+// Helper function to normalize test status values
+const normalizeStatus = (status: any): boolean => {
+  if (status === null || status === undefined) return false;
+  
+  // Handle boolean true as passed
+  if (status === true) return true;
+  if (status === false) return false;
+  
+  // Handle string values (case-insensitive)
+  if (typeof status === "string") {
+    const normalized = status.toLowerCase();
+    if (normalized.includes("pass")) return true;
+    if (normalized.includes("skip")) return true;
+  }
+  
+  return false;
+};
+
 router.post(`/get-qc-reports`, async (req: Request, res: Response) => {
   try {
     const {
@@ -169,27 +187,26 @@ router.post(`/get-qc-reports`, async (req: Request, res: Response) => {
       filteredIds = allReportsForCount
         .filter((report) => {
           const testResults = [
-            (report.screenDiscolorationTest as TestResult | null)?.status ===
-              "Passed",
-            (report.screenTest as TestResult | null)?.status === "Passed",
-            (report.screenTest as any)?.multiTouchPassed ?? false,
-            (report.gpsTest as TestResult | null)?.status === "Passed",
-            (report.wifiTest as TestResult | null)?.status === "Passed",
-            (report.bluetoothTest as TestResult | null)?.status === "Passed",
-            (report.cameraTest as any)?.frontCameraStatus === "Passed",
-            (report.cameraTest as any)?.backCameraStatus === "Passed",
-            (report.powerButtonTest as TestResult | null)?.status === "Passed",
-            (report.volumeKeysTest as TestResult | null)?.status === "Passed",
-            (report.proximityTest as TestResult | null)?.status === "Passed",
-            (report.earpieceTest as TestResult | null)?.status === "Passed",
-            (report.speakerTest as TestResult | null)?.status === "Passed",
-            (report.microphoneTest as TestResult | null)?.status === "Passed",
-            (report.fingerprintTest as TestResult | null)?.status === "Passed",
-            (report.vibrationTest as TestResult | null)?.status === "Passed",
-            (report.usbPortTest as TestResult | null)?.status === "Passed",
-            (report.audioJackTest as TestResult | null)?.status === "Passed",
-            report.isSimCarWorking ?? false,
-            !report.financeStatus,
+            normalizeStatus((report.screenDiscolorationTest as TestResult | null)?.status),
+            normalizeStatus((report.screenTest as TestResult | null)?.status),
+            normalizeStatus((report.screenTest as any)?.multiTouchPassed),
+            normalizeStatus((report.gpsTest as TestResult | null)?.status),
+            normalizeStatus((report.wifiTest as TestResult | null)?.status),
+            normalizeStatus((report.bluetoothTest as TestResult | null)?.status),
+            normalizeStatus((report.cameraTest as any)?.frontCameraStatus),
+            normalizeStatus((report.cameraTest as any)?.backCameraStatus),
+            normalizeStatus((report.powerButtonTest as TestResult | null)?.status),
+            normalizeStatus((report.volumeKeysTest as TestResult | null)?.status),
+            normalizeStatus((report.proximityTest as TestResult | null)?.status),
+            normalizeStatus((report.earpieceTest as TestResult | null)?.status),
+            normalizeStatus((report.speakerTest as TestResult | null)?.status),
+            normalizeStatus((report.microphoneTest as TestResult | null)?.status),
+            normalizeStatus((report.fingerprintTest as TestResult | null)?.status),
+            normalizeStatus((report.vibrationTest as TestResult | null)?.status),
+            normalizeStatus((report.usbPortTest as TestResult | null)?.status),
+            normalizeStatus((report.audioJackTest as TestResult | null)?.status),
+            normalizeStatus(report.isSimCarWorking),
+            normalizeStatus(!report.financeStatus),
           ];
 
           const failedCount = testResults.filter((test) => !test).length;
@@ -231,6 +248,7 @@ router.post(`/get-qc-reports`, async (req: Request, res: Response) => {
     });
 
     const qcReportCleaned = qcReports.map((report) => {
+      console.log(report);
       const deviceInfo = report.deviceInfo as unknown as DeviceInfoNew;
 
       // Categorize test results
@@ -243,90 +261,84 @@ router.post(`/get-qc-reports`, async (req: Request, res: Response) => {
       const singleTests = [
         {
           name: "Screen Discoloration",
-          test:
-            (report.screenDiscolorationTest as TestResult | null)?.status ===
-            "Passed",
+          test: normalizeStatus((report.screenDiscolorationTest as TestResult | null)?.status),
         },
         {
           name: "Screen Calibration",
-          test: (report.screenTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.screenTest as TestResult | null)?.status),
         },
         {
           name: "Multi Touch",
-          test: (report.screenTest as any)?.multiTouchPassed ?? false,
+          test: normalizeStatus((report.screenTest as any)?.multiTouchPassed),
         },
         {
           name: "GPS",
-          test: (report.gpsTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.gpsTest as TestResult | null)?.status),
         },
         {
           name: "WiFi",
-          test: (report.wifiTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.wifiTest as TestResult | null)?.status),
         },
         {
           name: "Bluetooth",
-          test:
-            (report.bluetoothTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.bluetoothTest as TestResult | null)?.status),
         },
         {
           name: "Front Camera",
-          test: (report.cameraTest as any)?.frontCameraStatus === "Passed",
+          test: normalizeStatus((report.cameraTest as any)?.frontCameraStatus),
         },
         {
           name: "Back Camera",
-          test:
-            (report.cameraTest as TestResult | null)?.backCameraStatus ===
-            "Passed",
+          test: normalizeStatus((report.cameraTest as any)?.backCameraStatus),
         },
         {
           name: "Power Button",
-          test:
-            (report.powerButtonTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.powerButtonTest as TestResult | null)?.status),
         },
         {
           name: "Volume Keys",
-          test:
-            (report.volumeKeysTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.volumeKeysTest as TestResult | null)?.status),
         },
         {
           name: "Proximity Sensor",
-          test:
-            (report.proximityTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.proximityTest as TestResult | null)?.status),
         },
         {
           name: "Earpiece",
-          test: (report.earpieceTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.earpieceTest as TestResult | null)?.status),
         },
         {
           name: "Speaker",
-          test: (report.speakerTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.speakerTest as TestResult | null)?.status),
         },
         {
           name: "Microphone",
-          test:
-            (report.microphoneTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.microphoneTest as TestResult | null)?.status),
         },
         {
           name: "Fingerprint",
-          test:
-            (report.fingerprintTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.fingerprintTest as TestResult | null)?.status),
         },
         {
           name: "Vibration",
-          test:
-            (report.vibrationTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.vibrationTest as TestResult | null)?.status),
         },
         {
           name: "Charging Port",
-          test: (report.usbPortTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.usbPortTest as TestResult | null)?.status),
         },
         {
           name: "Audio Jack",
-          test:
-            (report.audioJackTest as TestResult | null)?.status === "Passed",
+          test: normalizeStatus((report.audioJackTest as TestResult | null)?.status),
         },
-        { name: "SIM Card", test: report.isSimCarWorking ?? false },
-        { name: "Finance Lock", test: !report.financeStatus },
+        {
+          name: "SIM Card",
+          test: normalizeStatus(report.isSimCarWorking),
+        },
+        {
+          name: "Finance Lock",
+          test: normalizeStatus(!report.financeStatus),
+        },
       ];
 
       singleTests.forEach(({ name, test }) => {
@@ -437,6 +449,25 @@ router.post(`/get-qc-report/:reportId`, async (req: Request, res: Response) => {
       });
     }
 
+    // Helper function to convert status to display format
+    const convertStatusForDisplay = (status: any): string | boolean | null => {
+      if (status === null || status === undefined) return null;
+      
+      // Handle boolean true as passed
+      if (status === true) return true;
+      if (status === false) return false;
+      
+      // Handle string values (case-insensitive)
+      if (typeof status === "string") {
+        const normalized = status.toLowerCase();
+        if (normalized.includes("pass")) return "Passed";
+        if (normalized.includes("fail")) return "Failed";
+        if (normalized.includes("skip")) return "Skipped";
+      }
+      
+      return status;
+    };
+
     const filteredReport = {
       upperLayerData: {
         employeeImage: report.employeeImageKey,
@@ -453,26 +484,26 @@ router.post(`/get-qc-report/:reportId`, async (req: Request, res: Response) => {
         testId: report.testId,
       },
       lowerLayerData: {
-        screenDiscolorationTest: report.screenDiscolorationTest ? (report.screenDiscolorationTest as TestResult).status : null,
-        screenCalibrationTest: report.screenTest ? (report.screenTest as TestResult).status : null,
-        multiTouchTest: report.screenTest ? (report.screenTest as any).multiTouchPassed ? "Passed" : "Failed" : null,
-        gpsTest: report.gpsTest? (report.gpsTest as TestResult).status : null,
-        wifiTest: report.wifiTest ? (report.wifiTest as TestResult).status : null,
-        bluetoothTest: report.bluetoothTest ? (report.bluetoothTest as TestResult).status : null,
-        frontCameraTest: report.cameraTest ? (report.cameraTest as any).frontCameraStatus : null,
-        backCameraTest: report.cameraTest ? (report.cameraTest as any).backCameraStatus : null,
-        powerButtonTest: report.powerButtonTest ? (report.powerButtonTest as TestResult).status : null,
-        volumeKeysTest: report.volumeKeysTest ? (report.volumeKeysTest as TestResult).status : null,
-        proximitySensorTest: report.proximityTest ? (report.proximityTest as TestResult).status : null,
-        earpieceTest: report.earpieceTest ? (report.earpieceTest as TestResult).status : null,
-        speakerTest: report.speakerTest ? (report.speakerTest as TestResult).status : null,
-        microphoneTest: report.microphoneTest ? (report.microphoneTest as TestResult).status : null,
-        fingerprintTest: report.fingerprintTest ? (report.fingerprintTest as TestResult).status : null,
-        vibrationTest: report.vibrationTest ? (report.vibrationTest as TestResult).status : null,
-        chargingPortTest: report.usbPortTest ? (report.usbPortTest as TestResult).status : null,
-        audioJackTest: report.audioJackTest ? (report.audioJackTest as TestResult).status : null,
-        simCardTest: report.isSimCarWorking !== null ? (report.isSimCarWorking ? "Passed" : "Failed") : null,
-        financeLockTest: report.financeStatus !== null ? (!report.financeStatus ? "Passed" : "Failed") : null,
+        screenDiscolorationTest: convertStatusForDisplay(report.screenDiscolorationTest ? (report.screenDiscolorationTest as TestResult).status : null),
+        screenCalibrationTest: convertStatusForDisplay(report.screenTest ? (report.screenTest as TestResult).status : null),
+        multiTouchTest: convertStatusForDisplay(report.screenTest ? (report.screenTest as any).multiTouchPassed : null),
+        gpsTest: convertStatusForDisplay(report.gpsTest ? (report.gpsTest as TestResult).status : null),
+        wifiTest: convertStatusForDisplay(report.wifiTest ? (report.wifiTest as TestResult).status : null),
+        bluetoothTest: convertStatusForDisplay(report.bluetoothTest ? (report.bluetoothTest as TestResult).status : null),
+        frontCameraTest: convertStatusForDisplay(report.cameraTest ? (report.cameraTest as any).frontCameraStatus : null),
+        backCameraTest: convertStatusForDisplay(report.cameraTest ? (report.cameraTest as any).backCameraStatus : null),
+        powerButtonTest: convertStatusForDisplay(report.powerButtonTest ? (report.powerButtonTest as TestResult).status : null),
+        volumeKeysTest: convertStatusForDisplay(report.volumeKeysTest ? (report.volumeKeysTest as TestResult).status : null),
+        proximitySensorTest: convertStatusForDisplay(report.proximityTest ? (report.proximityTest as TestResult).status : null),
+        earpieceTest: convertStatusForDisplay(report.earpieceTest ? (report.earpieceTest as TestResult).status : null),
+        speakerTest: convertStatusForDisplay(report.speakerTest ? (report.speakerTest as TestResult).status : null),
+        microphoneTest: convertStatusForDisplay(report.microphoneTest ? (report.microphoneTest as TestResult).status : null),
+        fingerprintTest: convertStatusForDisplay(report.fingerprintTest ? (report.fingerprintTest as TestResult).status : null),
+        vibrationTest: convertStatusForDisplay(report.vibrationTest ? (report.vibrationTest as TestResult).status : null),
+        chargingPortTest: convertStatusForDisplay(report.usbPortTest ? (report.usbPortTest as TestResult).status : null),
+        audioJackTest: convertStatusForDisplay(report.audioJackTest ? (report.audioJackTest as TestResult).status : null),
+        simCardTest: convertStatusForDisplay(report.isSimCarWorking),
+        financeLockTest: convertStatusForDisplay(!report.financeStatus),
       }
     };
 

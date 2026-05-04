@@ -6,6 +6,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const prisma_1 = require("../config/prisma");
 const router = express_1.default.Router();
+// Helper function to normalize test status values
+const normalizeStatus = (status) => {
+    if (status === null || status === undefined)
+        return false;
+    // Handle boolean true as passed
+    if (status === true)
+        return true;
+    if (status === false)
+        return false;
+    // Handle string values (case-insensitive)
+    if (typeof status === "string") {
+        const normalized = status.toLowerCase();
+        if (normalized.includes("pass"))
+            return true;
+        if (normalized.includes("skip"))
+            return true;
+    }
+    return false;
+};
 router.post(`/get-qc-reports`, async (req, res) => {
     try {
         const { userId, page = 1, limit = 10, search = "", timeRange = "", status = [], } = req.body;
@@ -124,27 +143,26 @@ router.post(`/get-qc-reports`, async (req, res) => {
             filteredIds = allReportsForCount
                 .filter((report) => {
                 const testResults = [
-                    report.screenDiscolorationTest?.status ===
-                        "Passed",
-                    report.screenTest?.status === "Passed",
-                    report.screenTest?.multiTouchPassed ?? false,
-                    report.gpsTest?.status === "Passed",
-                    report.wifiTest?.status === "Passed",
-                    report.bluetoothTest?.status === "Passed",
-                    report.cameraTest?.frontCameraStatus === "Passed",
-                    report.cameraTest?.backCameraStatus === "Passed",
-                    report.powerButtonTest?.status === "Passed",
-                    report.volumeKeysTest?.status === "Passed",
-                    report.proximityTest?.status === "Passed",
-                    report.earpieceTest?.status === "Passed",
-                    report.speakerTest?.status === "Passed",
-                    report.microphoneTest?.status === "Passed",
-                    report.fingerprintTest?.status === "Passed",
-                    report.vibrationTest?.status === "Passed",
-                    report.usbPortTest?.status === "Passed",
-                    report.audioJackTest?.status === "Passed",
-                    report.isSimCarWorking ?? false,
-                    !report.financeStatus,
+                    normalizeStatus(report.screenDiscolorationTest?.status),
+                    normalizeStatus(report.screenTest?.status),
+                    normalizeStatus(report.screenTest?.multiTouchPassed),
+                    normalizeStatus(report.gpsTest?.status),
+                    normalizeStatus(report.wifiTest?.status),
+                    normalizeStatus(report.bluetoothTest?.status),
+                    normalizeStatus(report.cameraTest?.frontCameraStatus),
+                    normalizeStatus(report.cameraTest?.backCameraStatus),
+                    normalizeStatus(report.powerButtonTest?.status),
+                    normalizeStatus(report.volumeKeysTest?.status),
+                    normalizeStatus(report.proximityTest?.status),
+                    normalizeStatus(report.earpieceTest?.status),
+                    normalizeStatus(report.speakerTest?.status),
+                    normalizeStatus(report.microphoneTest?.status),
+                    normalizeStatus(report.fingerprintTest?.status),
+                    normalizeStatus(report.vibrationTest?.status),
+                    normalizeStatus(report.usbPortTest?.status),
+                    normalizeStatus(report.audioJackTest?.status),
+                    normalizeStatus(report.isSimCarWorking),
+                    normalizeStatus(!report.financeStatus),
                 ];
                 const failedCount = testResults.filter((test) => !test).length;
                 const isPassed = failedCount === 0;
@@ -181,6 +199,7 @@ router.post(`/get-qc-reports`, async (req, res) => {
             },
         });
         const qcReportCleaned = qcReports.map((report) => {
+            console.log(report);
             const deviceInfo = report.deviceInfo;
             // Categorize test results
             const testResults = {
@@ -191,80 +210,84 @@ router.post(`/get-qc-reports`, async (req, res) => {
             const singleTests = [
                 {
                     name: "Screen Discoloration",
-                    test: report.screenDiscolorationTest?.status ===
-                        "Passed",
+                    test: normalizeStatus(report.screenDiscolorationTest?.status),
                 },
                 {
                     name: "Screen Calibration",
-                    test: report.screenTest?.status === "Passed",
+                    test: normalizeStatus(report.screenTest?.status),
                 },
                 {
                     name: "Multi Touch",
-                    test: report.screenTest?.multiTouchPassed ?? false,
+                    test: normalizeStatus(report.screenTest?.multiTouchPassed),
                 },
                 {
                     name: "GPS",
-                    test: report.gpsTest?.status === "Passed",
+                    test: normalizeStatus(report.gpsTest?.status),
                 },
                 {
                     name: "WiFi",
-                    test: report.wifiTest?.status === "Passed",
+                    test: normalizeStatus(report.wifiTest?.status),
                 },
                 {
                     name: "Bluetooth",
-                    test: report.bluetoothTest?.status === "Passed",
+                    test: normalizeStatus(report.bluetoothTest?.status),
                 },
                 {
                     name: "Front Camera",
-                    test: report.cameraTest?.frontCameraStatus === "Passed",
+                    test: normalizeStatus(report.cameraTest?.frontCameraStatus),
                 },
                 {
                     name: "Back Camera",
-                    test: report.cameraTest?.backCameraStatus ===
-                        "Passed",
+                    test: normalizeStatus(report.cameraTest?.backCameraStatus),
                 },
                 {
                     name: "Power Button",
-                    test: report.powerButtonTest?.status === "Passed",
+                    test: normalizeStatus(report.powerButtonTest?.status),
                 },
                 {
                     name: "Volume Keys",
-                    test: report.volumeKeysTest?.status === "Passed",
+                    test: normalizeStatus(report.volumeKeysTest?.status),
                 },
                 {
                     name: "Proximity Sensor",
-                    test: report.proximityTest?.status === "Passed",
+                    test: normalizeStatus(report.proximityTest?.status),
                 },
                 {
                     name: "Earpiece",
-                    test: report.earpieceTest?.status === "Passed",
+                    test: normalizeStatus(report.earpieceTest?.status),
                 },
                 {
                     name: "Speaker",
-                    test: report.speakerTest?.status === "Passed",
+                    test: normalizeStatus(report.speakerTest?.status),
                 },
                 {
                     name: "Microphone",
-                    test: report.microphoneTest?.status === "Passed",
+                    test: normalizeStatus(report.microphoneTest?.status),
                 },
                 {
                     name: "Fingerprint",
-                    test: report.fingerprintTest?.status === "Passed",
+                    test: normalizeStatus(report.fingerprintTest?.status),
                 },
                 {
                     name: "Vibration",
-                    test: report.vibrationTest?.status === "Passed",
+                    test: normalizeStatus(report.vibrationTest?.status),
                 },
                 {
                     name: "Charging Port",
-                    test: report.usbPortTest?.status === "Passed",
+                    test: normalizeStatus(report.usbPortTest?.status),
                 },
                 {
                     name: "Audio Jack",
-                    test: report.audioJackTest?.status === "Passed",
+                    test: normalizeStatus(report.audioJackTest?.status),
                 },
-                { name: "SIM Card", test: report.isSimCarWorking ?? false },
-                { name: "Finance Lock", test: !report.financeStatus },
+                {
+                    name: "SIM Card",
+                    test: normalizeStatus(report.isSimCarWorking),
+                },
+                {
+                    name: "Finance Lock",
+                    test: normalizeStatus(!report.financeStatus),
+                },
             ];
             singleTests.forEach(({ name, test }) => {
                 if (test) {
@@ -366,6 +389,27 @@ router.post(`/get-qc-report/:reportId`, async (req, res) => {
                 error: "QC Report not found",
             });
         }
+        // Helper function to convert status to display format
+        const convertStatusForDisplay = (status) => {
+            if (status === null || status === undefined)
+                return null;
+            // Handle boolean true as passed
+            if (status === true)
+                return true;
+            if (status === false)
+                return false;
+            // Handle string values (case-insensitive)
+            if (typeof status === "string") {
+                const normalized = status.toLowerCase();
+                if (normalized.includes("pass"))
+                    return "Passed";
+                if (normalized.includes("fail"))
+                    return "Failed";
+                if (normalized.includes("skip"))
+                    return "Skipped";
+            }
+            return status;
+        };
         const filteredReport = {
             upperLayerData: {
                 employeeImage: report.employeeImageKey,
@@ -382,26 +426,26 @@ router.post(`/get-qc-report/:reportId`, async (req, res) => {
                 testId: report.testId,
             },
             lowerLayerData: {
-                screenDiscolorationTest: report.screenDiscolorationTest ? report.screenDiscolorationTest.status : null,
-                screenCalibrationTest: report.screenTest ? report.screenTest.status : null,
-                multiTouchTest: report.screenTest ? report.screenTest.multiTouchPassed ? "Passed" : "Failed" : null,
-                gpsTest: report.gpsTest ? report.gpsTest.status : null,
-                wifiTest: report.wifiTest ? report.wifiTest.status : null,
-                bluetoothTest: report.bluetoothTest ? report.bluetoothTest.status : null,
-                frontCameraTest: report.cameraTest ? report.cameraTest.frontCameraStatus : null,
-                backCameraTest: report.cameraTest ? report.cameraTest.backCameraStatus : null,
-                powerButtonTest: report.powerButtonTest ? report.powerButtonTest.status : null,
-                volumeKeysTest: report.volumeKeysTest ? report.volumeKeysTest.status : null,
-                proximitySensorTest: report.proximityTest ? report.proximityTest.status : null,
-                earpieceTest: report.earpieceTest ? report.earpieceTest.status : null,
-                speakerTest: report.speakerTest ? report.speakerTest.status : null,
-                microphoneTest: report.microphoneTest ? report.microphoneTest.status : null,
-                fingerprintTest: report.fingerprintTest ? report.fingerprintTest.status : null,
-                vibrationTest: report.vibrationTest ? report.vibrationTest.status : null,
-                chargingPortTest: report.usbPortTest ? report.usbPortTest.status : null,
-                audioJackTest: report.audioJackTest ? report.audioJackTest.status : null,
-                simCardTest: report.isSimCarWorking !== null ? (report.isSimCarWorking ? "Passed" : "Failed") : null,
-                financeLockTest: report.financeStatus !== null ? (!report.financeStatus ? "Passed" : "Failed") : null,
+                screenDiscolorationTest: convertStatusForDisplay(report.screenDiscolorationTest ? report.screenDiscolorationTest.status : null),
+                screenCalibrationTest: convertStatusForDisplay(report.screenTest ? report.screenTest.status : null),
+                multiTouchTest: convertStatusForDisplay(report.screenTest ? report.screenTest.multiTouchPassed : null),
+                gpsTest: convertStatusForDisplay(report.gpsTest ? report.gpsTest.status : null),
+                wifiTest: convertStatusForDisplay(report.wifiTest ? report.wifiTest.status : null),
+                bluetoothTest: convertStatusForDisplay(report.bluetoothTest ? report.bluetoothTest.status : null),
+                frontCameraTest: convertStatusForDisplay(report.cameraTest ? report.cameraTest.frontCameraStatus : null),
+                backCameraTest: convertStatusForDisplay(report.cameraTest ? report.cameraTest.backCameraStatus : null),
+                powerButtonTest: convertStatusForDisplay(report.powerButtonTest ? report.powerButtonTest.status : null),
+                volumeKeysTest: convertStatusForDisplay(report.volumeKeysTest ? report.volumeKeysTest.status : null),
+                proximitySensorTest: convertStatusForDisplay(report.proximityTest ? report.proximityTest.status : null),
+                earpieceTest: convertStatusForDisplay(report.earpieceTest ? report.earpieceTest.status : null),
+                speakerTest: convertStatusForDisplay(report.speakerTest ? report.speakerTest.status : null),
+                microphoneTest: convertStatusForDisplay(report.microphoneTest ? report.microphoneTest.status : null),
+                fingerprintTest: convertStatusForDisplay(report.fingerprintTest ? report.fingerprintTest.status : null),
+                vibrationTest: convertStatusForDisplay(report.vibrationTest ? report.vibrationTest.status : null),
+                chargingPortTest: convertStatusForDisplay(report.usbPortTest ? report.usbPortTest.status : null),
+                audioJackTest: convertStatusForDisplay(report.audioJackTest ? report.audioJackTest.status : null),
+                simCardTest: convertStatusForDisplay(report.isSimCarWorking),
+                financeLockTest: convertStatusForDisplay(!report.financeStatus),
             }
         };
         return res.status(200).json({

@@ -84,7 +84,7 @@ interface ReportData {
     testId: string;
   };
   lowerLayerData: {
-    [key: string]: string | null;
+    [key: string]: string | boolean | null;
   };
 }
 
@@ -156,12 +156,21 @@ const ViewQCReport = () => {
   }
 
   const getTestStatus = (
-    testKey: string,
+    testKey: string | boolean,
   ): "Passed" | "Failed" | "Skipped" | null => {
-    const value = report.lowerLayerData[testKey];
-    if (value === "Passed") return "Passed";
-    if (value === "Failed") return "Failed";
-    if (value === "Skipped") return "Skipped";
+    const value = report.lowerLayerData[testKey.toString()];
+    
+    // Handle boolean true as Passed
+    if (value === true) return "Passed";
+    
+    // Handle string values (case-insensitive, partial match)
+    if (typeof value === "string") {
+      const normalized = value.toLowerCase();
+      if (normalized.includes("pass")) return "Passed";
+      if (normalized.includes("fail")) return "Failed";
+      if (normalized.includes("skip")) return "Skipped";
+    }
+    
     return null;
   };
 
