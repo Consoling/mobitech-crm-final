@@ -2,7 +2,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
-import { AnimatePresence } from "framer-motion";
+
 import ProtectedLayout from "./layout/ProtectedLayout";
 import PublicLayout from "./layout/PublicLayout";
 import TOTPVerify from "./pages/TOTPVerify";

@@ -9,7 +9,7 @@ import mobitechCRMtext from "@/assets/id-card-assets/mobitech-crm.png";
 import idCardBack from "@/assets/id-card-assets/id-card-back.png";
 import idCardLogo from "@/assets/id-card-assets/id-card-logo.png";
 import { apiJson } from "@/lib/api";
-import { IconAddressBook, IconBuildingBank, IconBuildingStore, IconCalendar, IconCoinRupee, IconFile, IconId, IconIdBadge, IconIdBadge2, IconLabel, IconLogin2, IconPhone, IconRefresh, IconSticker2, IconUser, IconUserCircle, IconWallet, IconWorldMap } from "@tabler/icons-react";
+import { IconAddressBook, IconBuildingBank, IconBuildingStore, IconCalendar, IconCoinRupee, IconFile, IconId, IconIdBadge, IconIdBadge2,  IconLogin2,IconRefresh, IconSticker2, IconUser, IconUserCircle, IconWallet, IconWorldMap } from "@tabler/icons-react";
 import { ArrowLeft, ArrowRight, Download, Eye, Loader2, UsersRound } from "lucide-react";
 import Barcode from "react-barcode";
 import React, { useEffect,  useState } from "react";
