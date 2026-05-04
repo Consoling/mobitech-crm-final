@@ -383,32 +383,33 @@ const AadharVerifyDialog = ({
                 </button>
 
                 <div className="w-127.5 border border-[#E9E9E9]" />
-                <Button
-                  type="button"
-                  disabled={isFetchingAadharData}
-                  onClick={() => {
-                    if (otpValue.length !== 6) {
-                      setIsOtpInvalid(true);
-                      toast.error("Please enter the 6-digit OTP.");
-                      return;
-                    } else if (!requestId) {
-                      toast.error(
-                        "Invalid request. Please resend OTP and try again.",
-                      );
-                      return;
-                    } else {
-                      verifyAadharOtp();
-                    }
-                  }}
-                  className="w-73.5 h-9 bg-[#00c950] text-sm font-semibold text-white hover:bg-[#29ca4c] my-4"
-                >
-                  {isFetchingAadharData ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    "Verify OTP"
-                  )}
-                </Button>
               </div>
+
+              <Button
+                type="button"
+                disabled={isFetchingAadharData}
+                onClick={() => {
+                  if (otpValue.length !== 6) {
+                    setIsOtpInvalid(true);
+                    toast.error("Please enter the 6-digit OTP.");
+                    return;
+                  } else if (!requestId) {
+                    toast.error(
+                      "Invalid request. Please resend OTP and try again.",
+                    );
+                    return;
+                  } else {
+                    verifyAadharOtp();
+                  }
+                }}
+                className="w-73.5 h-9 bg-[#00c950] text-sm font-semibold text-white hover:bg-[#29ca4c] my-4"
+              >
+                {isFetchingAadharData ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  "Verify OTP"
+                )}
+              </Button>
             </>
           )}
           {step === 3 && aadharData && (

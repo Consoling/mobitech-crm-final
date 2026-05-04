@@ -1062,7 +1062,41 @@ const AddEmployee = () => {
                       </Button>
                       <Button
                         type="button"
-                        onClick={() => setStep(2)}
+                        onClick={() => {
+                          
+                          const firstName = form.getValues("firstName")?.trim();
+                          const lastName = form.getValues("lastName")?.trim();
+                          const email = form.getValues("email")?.trim();
+                          const phone = form.getValues("phone")?.trim();
+                          const profilePicture = form.getValues("profilePicture");
+                          
+                          if (!firstName) {
+                            toast.error("Please enter first name.");
+                            return;
+                          }
+                          if (!lastName) {
+                            toast.error("Please enter last name.");
+                            return;
+                          }
+                          if (!email) {
+                            toast.error("Please enter email address.");
+                            return;
+                          }
+                          if (!phone) {
+                            toast.error("Please enter phone number.");
+                            return;
+                          }
+                          if (!profilePicture) {
+                            toast.error("Please upload profile picture.");
+                            return;
+                          }
+                          
+                          if (form.getValues("isPhoneVerified") === false) {
+                            toast.error("Please verify the phone number before proceeding.");
+                            return;
+                          }
+                          setStep(2);
+                        }}
                         style={{
                           width: 220,
                           height: 48,
@@ -1189,7 +1223,19 @@ const AddEmployee = () => {
                       </Button>
                       <Button
                         type="button"
-                        onClick={() => setStep(3)}
+                        onClick={() => {
+                          const password = form.getValues("password");
+                          const role = form.getValues("role");
+                          if (!password) {
+                            toast.error("Please enter password.");
+                            return;
+                          }
+                          if (!role) {
+                            toast.error("Please select a role.");
+                            return;
+                          }
+                          setStep(3);
+                        }}
                         style={{
                           width: 220,
                           height: 48,
@@ -1418,7 +1464,14 @@ const AddEmployee = () => {
                       </Button>
                       <Button
                         type="button"
-                        onClick={() => setStep(4)}
+                        onClick={() => {
+                          const isAadharVerified = form.getValues("isAadharVerified");
+                          if (!isAadharVerified) {
+                            toast.error("Please verify Aadhar details before proceeding.");
+                            return;
+                          }
+                          setStep(4);
+                        }}
                         style={{
                           width: 220,
                           height: 48,
@@ -2368,7 +2421,52 @@ const AddEmployee = () => {
                       </Button>
                       <Button
                         type="button"
-                        onClick={() => {}}
+                        onClick={() => {
+
+                          const paymentType = form.getValues("paymentType");
+                          if(!paymentType) {
+                            toast.error("Please select a payment type");
+                            return;
+                          }
+                          if(paymentType === "bank-account" && !form.getValues("isBankVerified")) {
+                            toast.error("Please verify bank details");
+                            return;
+                          }
+                          if(paymentType === "upi" && !form.getValues("isUpiVerified")) {
+                            toast.error("Please verify UPI details");
+                            return;
+                          }
+                          const contractDocument = form.getValues("contractDocument");
+                          if(!contractDocument) {
+                            toast.error("Please upload contract documentg");
+                            return;
+                          }
+
+                          const dateOfJoining = form.getValues("dateOfJoining");
+                          if(!dateOfJoining) {
+                            toast.error("Please select date of joining");
+                            return;
+                          }
+
+                          const salary = form.getValues("salary");
+                          if(salary === undefined || salary === null || salary === "") {
+                            toast.error("Please enter salary amount");
+                            return;
+                          }
+                          const incentive = form.getValues("incentive");
+                          if(incentive === undefined || incentive === null || incentive === "") {
+                            toast.error("Please enter incentive amount");
+                            return;
+                          }
+
+                          const payoutDate = form.getValues("payoutDate");
+                          if(!payoutDate) {
+                            toast.error("Please select payout date");
+                            return;
+                          }
+
+                          console.log(form.getValues());
+                        }}
                         style={{
                           width: 220,
                           height: 48,
