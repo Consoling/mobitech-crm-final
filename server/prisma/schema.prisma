@@ -30,6 +30,7 @@ model User {
   qualificationImage String?
   VehicleFrontImage  String?
   VehicleBackImage   String?
+  contractDocument     String?
   role               Role?
   storeId            String?
   createdBy          String?

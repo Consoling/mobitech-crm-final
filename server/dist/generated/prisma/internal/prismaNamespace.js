@@ -160,6 +160,7 @@ exports.UserScalarFieldEnum = {
     qualificationImage: 'qualificationImage',
     VehicleFrontImage: 'VehicleFrontImage',
     VehicleBackImage: 'VehicleBackImage',
+    contractDocument: 'contractDocument',
     role: 'role',
     storeId: 'storeId',
     createdBy: 'createdBy',

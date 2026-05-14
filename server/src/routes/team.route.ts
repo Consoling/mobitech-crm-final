@@ -1,6 +1,9 @@
-import crypto from "crypto";
+import crypto, { randomUUID } from "crypto";
 import express, { Request, Response } from "express";
+import { hash } from "bcrypt";
 import {
+  CopyObjectCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -10,6 +13,7 @@ import { prisma } from "../config/prisma";
 import { redisClient } from "../config/redis";
 import { Role, UserStatus } from "../generated/prisma/enums";
 import { SYS_ENV } from "../utils/env";
+import { s3Client } from "../utils/s3";
 const router = express.Router();
 
 const DEFAULT_PAGE = 1;
@@ -54,7 +58,6 @@ const S3_PRESIGNED_URL_EXPIRES_IN_SECONDS = Number.isFinite(
   ? Math.max(60, SYS_ENV.AWS_S3_PRESIGNED_URL_EXPIRES_IN_SECONDS)
   : 900;
 
-const s3Client = S3_REGION ? new S3Client({ region: S3_REGION }) : null;
 const TEMP_UPLOAD_FIELDS = new Set([
   "profilePicture",
   "aadharFront",
@@ -126,15 +129,17 @@ const parseLimit = (input: unknown): number => {
   return Math.min(Math.floor(parsed), MAX_LIMIT);
 };
 
-const toUiStatus = (status: UserStatus): "Active" | "Inactive" | "Terminated" => {
+const toUiStatus = (
+  status: UserStatus,
+): "Active" | "Inactive" | "Terminated" => {
   if (status === UserStatus.ACTIVE) {
     return "Active";
   }
   if (status === UserStatus.INACTIVE) {
     return "Inactive";
-  } 
-  if(status === UserStatus.TERMINATED) {
-  return "Terminated";
+  }
+  if (status === UserStatus.TERMINATED) {
+    return "Terminated";
   }
   return "Inactive";
 };
@@ -1779,7 +1784,7 @@ router.post(`/disable-employee`, async (req: Request, res: Response) => {
         status: UserStatus.INACTIVE,
       },
     });
-	return res.status(200).json({ message: "Employee disabled successfully" });
+    return res.status(200).json({ message: "Employee disabled successfully" });
   } catch (error) {
     console.error("Error disabling employee:", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -1807,10 +1812,10 @@ router.post(`/enable-employee`, async (req: Request, res: Response) => {
       },
       data: {
         status: UserStatus.ACTIVE,
-		dateOfTermination: null,
+        dateOfTermination: null,
       },
     });
-	return res.status(200).json({ message: "Employee enabled successfully" });
+    return res.status(200).json({ message: "Employee enabled successfully" });
   } catch (error) {
     console.error("Error enabling employee:", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -1838,13 +1843,334 @@ router.post(`/terminate-employee`, async (req: Request, res: Response) => {
       },
       data: {
         status: UserStatus.TERMINATED,
-		dateOfTermination: new Date(),
+        dateOfTermination: new Date(),
       },
     });
-	return res.status(200).json({ message: "Employee terminated successfully" });
+    return res
+      .status(200)
+      .json({ message: "Employee terminated successfully" });
   } catch (error) {
     console.error("Error terminating employee:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
+const generateId = async () => {
+  const prefix = "MT";
+  const random = Math.floor(Math.random() * 1000000)
+    .toString()
+    .padStart(6, "0");
+  const id = `${prefix}${random}`;
+
+  // Check if ID exists
+  const exists = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { manager: { employeeId: id } },
+        { technician: { employeeId: id } },
+        { fieldExecutive: { employeeId: id } },
+        { salesExecutive: { employeeId: id } },
+      ],
+    },
+  });
+
+  // If ID exists, generate a new one
+  if (exists) {
+    return generateId();
+  }
+
+  return id;
+};
+
+router.post(`/add-employee`, async (req: Request, res: Response) => {
+  try {
+    const body = req.body ?? {};
+
+    const phone = String(body.phone ?? "").trim();
+    const phoneVerified = Boolean(body.isPhoneVerified);
+    const salary =
+      body.salary !== undefined && body.salary !== ""
+        ? Number(body.salary)
+        : null;
+    const payoutDate =
+      body.payoutDate !== undefined && body.payoutDate !== ""
+        ? Number(body.payoutDate)
+        : null;
+    const password = String(body.password ?? "");
+    const email = body.email ? String(body.email).trim() : null;
+    const dob = body.aadharData ? new Date(String(body.aadharData.dob)) : null;
+    const doj = body.dateOfJoining
+      ? new Date(String(body.dateOfJoining))
+      : null;
+    const roleStr = String(body.role ?? "").trim();
+    const storeId = body.storeId ? String(body.storeId).trim() : null;
+
+    const firstName = String(body.firstName ?? "").trim();
+    const lastName = String(body.lastName ?? "").trim();
+    const aadharNumber =
+      body.aadharData && body.aadharData.aadhaar_number
+        ? String(body.aadharData.aadhaar_number).trim()
+        : null;
+
+    if (!phone || !password) {
+      return res
+        .status(400)
+        .json({ message: "Phone and password are required" });
+    }
+
+    // Check duplicate phone
+    const existing = await prisma.user.findUnique({ where: { phone } });
+    if (existing) {
+      return res
+        .status(400)
+        .json({ message: "User with this phone already exists" });
+    }
+
+    // Map role string to enum
+    const roleMap: Record<string, Role | null> = {
+      admin: Role.ADMIN,
+      "store-manager": Role.MANAGER,
+      "sales-agent": Role.MARKETING_EXECUTIVE,
+      technician: Role.TECHNICIAN,
+      "field-executive": Role.FIELD_EXECUTIVE,
+    };
+
+    const roleEnum = roleMap[roleStr] ?? null;
+
+    const hashed = await hash(password, 10);
+
+    // Generate employeeId early so we can use it for final S3 paths
+    const employeeId = await generateId();
+
+    // Map temp keys to final keys and copy files in S3
+    const tempToFinalMapping: Record<string, string> = {
+      profilePicture: "profileImage",
+      aadharFront: "aadharFrontImage",
+      aadharBack: "aadharBackImage",
+      qualificationDocument: "qualificationImage",
+      vehicleImageFront: "VehicleFrontImage",
+      vehicleImageBack: "VehicleBackImage",
+      contractDocument: "contractDocument", // Store but not mapped to User model
+    };
+
+    const userCreateData: any = {
+      phone,
+      phoneVerified: phoneVerified,
+      salary,
+      payoutDate,
+      password: hashed,
+      email: email || null,
+      dateOfBirth: dob,
+      dateOfJoining: doj,
+      isAdmin: roleEnum === Role.ADMIN,
+      role: roleEnum,
+      storeId: storeId || null,
+    };
+
+    const bankName = body.bankName ? String(body.bankName).trim() : null;
+    const accountNumber = body.accountNumber
+      ? String(body.accountNumber).trim()
+      : null;
+    const ifscCode = body.ifscCode ? String(body.ifscCode).trim() : null;
+    const beneficiaryName = body.beneficiaryName
+      ? String(body.beneficiaryName).trim()
+      : null;
+    const upiId = body.upiId ? String(body.upiId).trim() : null;
+
+    const bankDetailsPayload = {
+      accountNumber: accountNumber || null,
+      ifsc: ifscCode || null,
+      bankName: bankName || null,
+      beneficiaryName: beneficiaryName || null,
+      upiId: upiId || null,
+    };
+
+    switch (roleEnum) {
+      case Role.MANAGER:
+        userCreateData.manager = {
+          create: {
+            employeeId,
+            firstName,
+            lastName,
+            aadharId: aadharNumber,
+            bankDetails: {
+          create: bankDetailsPayload
+        }
+          },
+        };
+        break;
+
+      case Role.TECHNICIAN:
+        userCreateData.technician = {
+          create: {
+            employeeId,
+            firstName,
+            lastName,
+            aadharId: aadharNumber,
+            bankDetails: {
+          create: bankDetailsPayload
+        }
+          },
+        };
+        break;
+
+      case Role.FIELD_EXECUTIVE:
+        userCreateData.fieldExecutive = {
+          create: {
+            employeeId,
+            firstName,
+            lastName,
+            aadharId: aadharNumber,
+            bankDetails: {
+          create: bankDetailsPayload
+        }
+          },
+        };
+        break;
+
+      case Role.MARKETING_EXECUTIVE:
+        userCreateData.salesExecutive = {
+          create: {
+            employeeId,
+            firstName,
+            lastName,
+            aadharId: aadharNumber,
+            bankDetails: {
+          create: bankDetailsPayload
+        }
+          },
+        };
+        break;
+    }
+
+    // Copy files from temp to final in S3, update userCreateData with final keys
+    const tempFilesToDelete: string[] = [];
+    for (const [fieldName, dbFieldName] of Object.entries(tempToFinalMapping)) {
+      const tempKey = body[fieldName]?.key;
+      if (!tempKey) continue;
+
+      if (s3Client && S3_BUCKET_NAME) {
+        try {
+          const ext = tempKey.split(".").pop();
+          const finalKey = `final/${Date.now()}-${randomUUID()}.${ext}`;
+
+          // Copy from temp to final
+          await s3Client.send(
+            new CopyObjectCommand({
+              Bucket: S3_BUCKET_NAME,
+              CopySource: `${S3_BUCKET_NAME}/${tempKey}`,
+              Key: finalKey,
+            }),
+          );
+
+          userCreateData[dbFieldName] = finalKey;
+
+          tempFilesToDelete.push(tempKey);
+        } catch (error) {
+          console.error(`Error copying ${tempKey}:`, error);
+          throw new Error(`Failed to copy file ${fieldName} to final storage`);
+        }
+      }
+    }
+
+    // create user with final keys
+    const created = await prisma.user.create({ data: userCreateData });
+
+    // Clean up temp files after successful user creation
+    if (s3Client && S3_BUCKET_NAME) {
+      for (const tempKey of tempFilesToDelete) {
+        try {
+          await s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: S3_BUCKET_NAME,
+              Key: tempKey,
+            }),
+          );
+        } catch (error) {
+          console.error(`Error deleting temp file ${tempKey}:`, error);
+          // Don't throw - deletion failure shouldn't fail the request
+        }
+      }
+    }
+
+    // Create admin/detail records when possible
+    // IMPORTANT: Must create role records BEFORE BankDetails due to FK constraints
+    // Track which role record was created so we only reference it in BankDetails if it exists
+
+    let roleRecordCreated = false;
+
+    if (roleEnum === Role.ADMIN) {
+      await prisma.admin.create({
+        data: {
+          userId: created.id,
+          employeeId,
+          firstName: firstName || null,
+          lastName: lastName || null,
+        },
+      });
+      roleRecordCreated = true;
+    }
+
+    if (
+      roleRecordCreated &&
+      (bankName || accountNumber || ifscCode || beneficiaryName || upiId)
+    ) {
+      await prisma.bankDetails.create({
+        data: {
+          bankName: bankName || null,
+          accountNumber: accountNumber || null,
+          ifsc: ifscCode || null,
+          beneficiaryName: beneficiaryName || null,
+          upiId: upiId || null,
+          managerId: roleEnum === Role.MANAGER ? created.id : undefined,
+          technicianId: roleEnum === Role.TECHNICIAN ? created.id : undefined,
+          fieldExecId:
+            roleEnum === Role.FIELD_EXECUTIVE ? created.id : undefined,
+          salesExecId:
+            roleEnum === Role.MARKETING_EXECUTIVE ? created.id : undefined,
+        },
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      user: {
+        id: created.id,
+        phone: created.phone,
+        email: created.email,
+        role: created.role,
+        createdAt: created.createdAt,
+      },
+      employeeId,
+    });
+  } catch (error: any) {
+    console.error("add-employee error:", error);
+    // handle unique constraint
+    if (error?.code === "P2002") {
+      return res
+        .status(400)
+        .json({ message: "Duplicate value violates unique constraint" });
+    }
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.post(`/check-phone`, async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.body as { phone: string };
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number is required" });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { phone } });
+    return res.status(200).json({
+      message: {
+        exists: Boolean(existing),
+      },
+    });
+  } catch (error) {
+    console.error("check-phone error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 export default router;

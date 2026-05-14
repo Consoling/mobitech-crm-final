@@ -1,16 +1,51 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const crypto_1 = __importDefault(require("crypto"));
+const crypto_1 = __importStar(require("crypto"));
 const express_1 = __importDefault(require("express"));
+const bcrypt_1 = require("bcrypt");
 const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const prisma_1 = require("../config/prisma");
 const redis_1 = require("../config/redis");
 const enums_1 = require("../generated/prisma/enums");
 const env_1 = require("../utils/env");
+const s3_1 = require("../utils/s3");
 const router = express_1.default.Router();
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -47,7 +82,6 @@ const S3_REGION = env_1.SYS_ENV.AWS_REGION?.trim() ?? "";
 const S3_PRESIGNED_URL_EXPIRES_IN_SECONDS = Number.isFinite(env_1.SYS_ENV.AWS_S3_PRESIGNED_URL_EXPIRES_IN_SECONDS)
     ? Math.max(60, env_1.SYS_ENV.AWS_S3_PRESIGNED_URL_EXPIRES_IN_SECONDS)
     : 900;
-const s3Client = S3_REGION ? new client_s3_1.S3Client({ region: S3_REGION }) : null;
 const TEMP_UPLOAD_FIELDS = new Set([
     "profilePicture",
     "aadharFront",
@@ -201,9 +235,9 @@ const getImagePayload = async (key) => {
         };
     }
     // Fall back to presigned S3 URL if CDN not configured
-    if (s3Client && S3_BUCKET_NAME) {
+    if (s3_1.s3Client && S3_BUCKET_NAME) {
         try {
-            const url = await (0, s3_request_presigner_1.getSignedUrl)(s3Client, new client_s3_1.GetObjectCommand({
+            const url = await (0, s3_request_presigner_1.getSignedUrl)(s3_1.s3Client, new client_s3_1.GetObjectCommand({
                 Bucket: S3_BUCKET_NAME,
                 Key: key,
             }), { expiresIn: S3_PRESIGNED_URL_EXPIRES_IN_SECONDS });
@@ -1470,7 +1504,7 @@ router.post(`/add-employee/verify-bank`, async (req, res) => {
 });
 router.post(`/uploads/presign-temp`, async (req, res) => {
     try {
-        if (!s3Client || !S3_BUCKET_NAME) {
+        if (!s3_1.s3Client || !S3_BUCKET_NAME) {
             return res.status(500).json({ message: "S3 is not configured" });
         }
         const { field, fileName, contentType, size } = req.body;
@@ -1493,7 +1527,7 @@ router.post(`/uploads/presign-temp`, async (req, res) => {
         const fileId = crypto_1.default.randomUUID();
         const extension = getExtensionFromUpload(fileName, contentType);
         const key = `temp/add-employee/${draftId}/${field}-${fileId}.${extension}`;
-        const uploadUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3Client, new client_s3_1.PutObjectCommand({
+        const uploadUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3_1.s3Client, new client_s3_1.PutObjectCommand({
             Bucket: S3_BUCKET_NAME,
             Key: key,
             ContentType: contentType,
@@ -1595,10 +1629,290 @@ router.post(`/terminate-employee`, async (req, res) => {
                 dateOfTermination: new Date(),
             },
         });
-        return res.status(200).json({ message: "Employee terminated successfully" });
+        return res
+            .status(200)
+            .json({ message: "Employee terminated successfully" });
     }
     catch (error) {
         console.error("Error terminating employee:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+const generateId = async () => {
+    const prefix = "MT";
+    const random = Math.floor(Math.random() * 1000000)
+        .toString()
+        .padStart(6, "0");
+    const id = `${prefix}${random}`;
+    // Check if ID exists
+    const exists = await prisma_1.prisma.user.findFirst({
+        where: {
+            OR: [
+                { manager: { employeeId: id } },
+                { technician: { employeeId: id } },
+                { fieldExecutive: { employeeId: id } },
+                { salesExecutive: { employeeId: id } },
+            ],
+        },
+    });
+    // If ID exists, generate a new one
+    if (exists) {
+        return generateId();
+    }
+    return id;
+};
+router.post(`/add-employee`, async (req, res) => {
+    try {
+        const body = req.body ?? {};
+        const phone = String(body.phone ?? "").trim();
+        const phoneVerified = Boolean(body.isPhoneVerified);
+        const salary = body.salary !== undefined && body.salary !== ""
+            ? Number(body.salary)
+            : null;
+        const payoutDate = body.payoutDate !== undefined && body.payoutDate !== ""
+            ? Number(body.payoutDate)
+            : null;
+        const password = String(body.password ?? "");
+        const email = body.email ? String(body.email).trim() : null;
+        const dob = body.aadharData ? new Date(String(body.aadharData.dob)) : null;
+        const doj = body.dateOfJoining
+            ? new Date(String(body.dateOfJoining))
+            : null;
+        const roleStr = String(body.role ?? "").trim();
+        const storeId = body.storeId ? String(body.storeId).trim() : null;
+        const firstName = String(body.firstName ?? "").trim();
+        const lastName = String(body.lastName ?? "").trim();
+        const aadharNumber = body.aadharData && body.aadharData.aadhaar_number
+            ? String(body.aadharData.aadhaar_number).trim()
+            : null;
+        if (!phone || !password) {
+            return res
+                .status(400)
+                .json({ message: "Phone and password are required" });
+        }
+        // Check duplicate phone
+        const existing = await prisma_1.prisma.user.findUnique({ where: { phone } });
+        if (existing) {
+            return res
+                .status(400)
+                .json({ message: "User with this phone already exists" });
+        }
+        // Map role string to enum
+        const roleMap = {
+            admin: enums_1.Role.ADMIN,
+            "store-manager": enums_1.Role.MANAGER,
+            "sales-agent": enums_1.Role.MARKETING_EXECUTIVE,
+            technician: enums_1.Role.TECHNICIAN,
+            "field-executive": enums_1.Role.FIELD_EXECUTIVE,
+        };
+        const roleEnum = roleMap[roleStr] ?? null;
+        const hashed = await (0, bcrypt_1.hash)(password, 10);
+        // Generate employeeId early so we can use it for final S3 paths
+        const employeeId = await generateId();
+        // Map temp keys to final keys and copy files in S3
+        const tempToFinalMapping = {
+            profilePicture: "profileImage",
+            aadharFront: "aadharFrontImage",
+            aadharBack: "aadharBackImage",
+            qualificationDocument: "qualificationImage",
+            vehicleImageFront: "VehicleFrontImage",
+            vehicleImageBack: "VehicleBackImage",
+            contractDocument: "contractDocument", // Store but not mapped to User model
+        };
+        const userCreateData = {
+            phone,
+            phoneVerified: phoneVerified,
+            salary,
+            payoutDate,
+            password: hashed,
+            email: email || null,
+            dateOfBirth: dob,
+            dateOfJoining: doj,
+            isAdmin: roleEnum === enums_1.Role.ADMIN,
+            role: roleEnum,
+            storeId: storeId || null,
+        };
+        const bankName = body.bankName ? String(body.bankName).trim() : null;
+        const accountNumber = body.accountNumber
+            ? String(body.accountNumber).trim()
+            : null;
+        const ifscCode = body.ifscCode ? String(body.ifscCode).trim() : null;
+        const beneficiaryName = body.beneficiaryName
+            ? String(body.beneficiaryName).trim()
+            : null;
+        const upiId = body.upiId ? String(body.upiId).trim() : null;
+        const bankDetailsPayload = {
+            accountNumber: accountNumber || null,
+            ifsc: ifscCode || null,
+            bankName: bankName || null,
+            beneficiaryName: beneficiaryName || null,
+            upiId: upiId || null,
+        };
+        switch (roleEnum) {
+            case enums_1.Role.MANAGER:
+                userCreateData.manager = {
+                    create: {
+                        employeeId,
+                        firstName,
+                        lastName,
+                        aadharId: aadharNumber,
+                        bankDetails: {
+                            create: bankDetailsPayload
+                        }
+                    },
+                };
+                break;
+            case enums_1.Role.TECHNICIAN:
+                userCreateData.technician = {
+                    create: {
+                        employeeId,
+                        firstName,
+                        lastName,
+                        aadharId: aadharNumber,
+                        bankDetails: {
+                            create: bankDetailsPayload
+                        }
+                    },
+                };
+                break;
+            case enums_1.Role.FIELD_EXECUTIVE:
+                userCreateData.fieldExecutive = {
+                    create: {
+                        employeeId,
+                        firstName,
+                        lastName,
+                        aadharId: aadharNumber,
+                        bankDetails: {
+                            create: bankDetailsPayload
+                        }
+                    },
+                };
+                break;
+            case enums_1.Role.MARKETING_EXECUTIVE:
+                userCreateData.salesExecutive = {
+                    create: {
+                        employeeId,
+                        firstName,
+                        lastName,
+                        aadharId: aadharNumber,
+                        bankDetails: {
+                            create: bankDetailsPayload
+                        }
+                    },
+                };
+                break;
+        }
+        // Copy files from temp to final in S3, update userCreateData with final keys
+        const tempFilesToDelete = [];
+        for (const [fieldName, dbFieldName] of Object.entries(tempToFinalMapping)) {
+            const tempKey = body[fieldName]?.key;
+            if (!tempKey)
+                continue;
+            if (s3_1.s3Client && S3_BUCKET_NAME) {
+                try {
+                    const ext = tempKey.split(".").pop();
+                    const finalKey = `final/${Date.now()}-${(0, crypto_1.randomUUID)()}.${ext}`;
+                    // Copy from temp to final
+                    await s3_1.s3Client.send(new client_s3_1.CopyObjectCommand({
+                        Bucket: S3_BUCKET_NAME,
+                        CopySource: `${S3_BUCKET_NAME}/${tempKey}`,
+                        Key: finalKey,
+                    }));
+                    userCreateData[dbFieldName] = finalKey;
+                    tempFilesToDelete.push(tempKey);
+                }
+                catch (error) {
+                    console.error(`Error copying ${tempKey}:`, error);
+                    throw new Error(`Failed to copy file ${fieldName} to final storage`);
+                }
+            }
+        }
+        // create user with final keys
+        const created = await prisma_1.prisma.user.create({ data: userCreateData });
+        // Clean up temp files after successful user creation
+        if (s3_1.s3Client && S3_BUCKET_NAME) {
+            for (const tempKey of tempFilesToDelete) {
+                try {
+                    await s3_1.s3Client.send(new client_s3_1.DeleteObjectCommand({
+                        Bucket: S3_BUCKET_NAME,
+                        Key: tempKey,
+                    }));
+                }
+                catch (error) {
+                    console.error(`Error deleting temp file ${tempKey}:`, error);
+                    // Don't throw - deletion failure shouldn't fail the request
+                }
+            }
+        }
+        // Create admin/detail records when possible
+        // IMPORTANT: Must create role records BEFORE BankDetails due to FK constraints
+        // Track which role record was created so we only reference it in BankDetails if it exists
+        let roleRecordCreated = false;
+        if (roleEnum === enums_1.Role.ADMIN) {
+            await prisma_1.prisma.admin.create({
+                data: {
+                    userId: created.id,
+                    employeeId,
+                    firstName: firstName || null,
+                    lastName: lastName || null,
+                },
+            });
+            roleRecordCreated = true;
+        }
+        if (roleRecordCreated &&
+            (bankName || accountNumber || ifscCode || beneficiaryName || upiId)) {
+            await prisma_1.prisma.bankDetails.create({
+                data: {
+                    bankName: bankName || null,
+                    accountNumber: accountNumber || null,
+                    ifsc: ifscCode || null,
+                    beneficiaryName: beneficiaryName || null,
+                    upiId: upiId || null,
+                    managerId: roleEnum === enums_1.Role.MANAGER ? created.id : undefined,
+                    technicianId: roleEnum === enums_1.Role.TECHNICIAN ? created.id : undefined,
+                    fieldExecId: roleEnum === enums_1.Role.FIELD_EXECUTIVE ? created.id : undefined,
+                    salesExecId: roleEnum === enums_1.Role.MARKETING_EXECUTIVE ? created.id : undefined,
+                },
+            });
+        }
+        return res.status(201).json({
+            success: true,
+            user: {
+                id: created.id,
+                phone: created.phone,
+                email: created.email,
+                role: created.role,
+                createdAt: created.createdAt,
+            },
+            employeeId,
+        });
+    }
+    catch (error) {
+        console.error("add-employee error:", error);
+        // handle unique constraint
+        if (error?.code === "P2002") {
+            return res
+                .status(400)
+                .json({ message: "Duplicate value violates unique constraint" });
+        }
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.post(`/check-phone`, async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) {
+            return res.status(400).json({ message: "Phone number is required" });
+        }
+        const existing = await prisma_1.prisma.user.findUnique({ where: { phone } });
+        return res.status(200).json({
+            message: {
+                exists: Boolean(existing),
+            },
+        });
+    }
+    catch (error) {
+        console.error("check-phone error:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 });

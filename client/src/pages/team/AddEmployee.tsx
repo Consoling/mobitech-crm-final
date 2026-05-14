@@ -18,7 +18,10 @@ import {
   CalendarIcon,
   Check,
   ChevronsUpDown,
+  Eye,
+  EyeOff,
   Loader2,
+  Pencil,
   Upload,
   UsersRound,
 } from "lucide-react";
@@ -51,6 +54,7 @@ import { apiJson, jsonHeaders } from "@/lib/api";
 import { useDebounce } from "@/hooks/useDebounce";
 import AadharVerifyDialog from "./components/aadhar-verify";
 import { BANK_NAMES } from "@/constants/const";
+import { useNavigate } from "react-router-dom";
 
 const addEmployeeSchema = z.object({
   storeId: z.string().optional(),
@@ -124,6 +128,7 @@ const employeeLabelClassName =
   "[font-family:Inter] text-[13px] font-medium leading-[145%] tracking-[0] align-middle text-[#344054]";
 
 const AddEmployee = () => {
+  const navigate = useNavigate();
   const [selectedProfileFileName, setSelectedProfileFileName] =
     useState("No file chosen");
   const [selectedAadharFrontFileName, setSelectedAadharFrontFileName] =
@@ -165,6 +170,8 @@ const AddEmployee = () => {
   const [aadharData, setAadharData] = useState<any>(null);
   const [isVerifyingUpi, setIsVerifyingUpi] = useState(false);
   const [isVerifyingBank, setIsVerifyingBank] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const form = useForm<AddEmployeeFormValues>({
     resolver: zodResolver(addEmployeeSchema),
     defaultValues: {
@@ -234,8 +241,84 @@ const AddEmployee = () => {
     );
   }, [bankOptions, bankSearch]);
 
+  // Helper to format Date -> YYYY-MM-DD using local date parts (avoids timezone shift)
+  const formatDateToYMD = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
+  };
+
+  // Helper to parse YYYY-MM-DD -> Date (local)
+  const parseYMDToDate = (s?: string) => {
+    if (!s) return undefined;
+    const parts = s.split("-");
+    if (parts.length !== 3) return undefined;
+    const y = Number(parts[0]);
+    const m = Number(parts[1]);
+    const d = Number(parts[2]);
+    if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return undefined;
+    return new Date(y, m - 1, d);
+  };
+
   const onSubmit = (values: AddEmployeeFormValues) => {
     console.log("Add employee form values:", values);
+  };
+
+  const submitEmployee = async () => {
+    try {
+      const paymentType = form.getValues("paymentType");
+      if (!paymentType) return toast.error("Please select a payment type.");
+
+      if (paymentType === "bank-account" && !form.getValues("isBankVerified"))
+        return toast.error("Please verify bank details.");
+      if (paymentType === "upi" && !form.getValues("isUpiVerified"))
+        return toast.error("Please verify UPI details.");
+
+      const contractDocument = form.getValues("contractDocument");
+      if (!contractDocument)
+        return toast.error("Please upload contract document.");
+
+      const dateOfJoining = form.getValues("dateOfJoining");
+      if (!dateOfJoining) return toast.error("Please select date of joining.");
+
+      const salary = form.getValues("salary");
+      if (salary === undefined || salary === null || salary === "")
+        return toast.error("Please enter salary.");
+      const incentive = form.getValues("incentive");
+      if (incentive === undefined || incentive === null || incentive === "")
+        return toast.error("Please enter incentive.");
+
+      const payoutDate = form.getValues("payoutDate");
+      if (!payoutDate) return toast.error("Please select payout date.");
+
+      const payload = form.getValues();
+
+      console.log("Prepared payload for submission:", payload);
+
+      setIsSubmitting(true);
+      const { response, data } = await apiJson<any>("/team/add-employee", {
+        method: "POST",
+        headers: jsonHeaders,
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const message = data?.message ?? "Failed to create employee";
+        toast.error(message);
+        return;
+      }
+
+      toast.success(`Employee ${data.employeeId} created successfully`);
+      // Optionally reset form / navigate
+      form.reset();
+      navigate("/manage-team/employees");
+    } catch (error) {
+      console.error(error);
+      toast.error("Error creating employee");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const uploadTempFile = async (
@@ -658,7 +741,7 @@ const AddEmployee = () => {
                                 >
                                   Choose file
                                 </label>
-                                <p className="truncate text-sm text-[#98A2B3]">
+                                <p className="truncate w-32 text-sm text-[#98A2B3]">
                                   {selectedProfileFileName}
                                 </p>
                               </div>
@@ -679,7 +762,7 @@ const AddEmployee = () => {
                                 id="employee-profile-picture"
                                 type="file"
                                 accept="image/png,image/jpeg"
-                                className="hidden"
+                                className="hidden "
                                 onChange={async (event) => {
                                   await handleTempUploadChange(
                                     "profilePicture",
@@ -813,35 +896,67 @@ const AddEmployee = () => {
                                 } else {
                                   setIsSendingOtp(true);
                                   try {
-                                    const { response, data } = await apiJson<{
-                                      success?: boolean;
-                                      message?: string;
-                                      error?: string;
-                                      medium?: "whatsapp" | "sms";
-                                    }>("/team/add-employee/send-otp", {
-                                      method: "POST",
-                                      headers: jsonHeaders,
-                                      body: JSON.stringify({
-                                        identifier: phone,
-                                      }),
-                                    });
+                                    const phone = form.getValues().phone;
+                                    const { response: response1, data: data1 } =
+                                      await apiJson<{
+                                        success?: boolean;
+                                        message?: {
+                                          exists?: boolean;
+                                        };
+                                        error?: string;
+                                      }>("/team/check-phone", {
+                                        method: "POST",
+                                        headers: jsonHeaders,
+                                        body: JSON.stringify({ phone }),
+                                      });
 
-                                    if (!response.ok || !data?.success) {
+                                    if (!response1.ok) {
+                                      const message =
+                                        "Failed to check phone number";
+                                      toast.error(message);
+                                      return;
+                                    } else if (
+                                      response1.ok &&
+                                      data1?.message?.exists
+                                    ) {
                                       toast.error(
-                                        data?.message ??
-                                          data?.error ??
-                                          "Failed to send OTP. Please try again.",
+                                        "Phone number is already in use",
                                       );
                                       return;
-                                    }
+                                    } else {
+                                      // proceed to send OTP
 
-                                    toast.success(
-                                      data.message ?? "OTP sent successfully.",
-                                    );
-                                    setResendCountdown(30);
-                                    setOtpValue("");
-                                    setIsOtpInvalid(false);
-                                    setOpenPhoneVerifyDialog(true);
+                                      const { response, data } = await apiJson<{
+                                        success?: boolean;
+                                        message?: string;
+                                        error?: string;
+                                        medium?: "whatsapp" | "sms";
+                                      }>("/team/add-employee/send-otp", {
+                                        method: "POST",
+                                        headers: jsonHeaders,
+                                        body: JSON.stringify({
+                                          identifier: phone,
+                                        }),
+                                      });
+
+                                      if (!response.ok || !data?.success) {
+                                        toast.error(
+                                          data?.message ??
+                                            data?.error ??
+                                            "Failed to send OTP. Please try again.",
+                                        );
+                                        return;
+                                      }
+
+                                      toast.success(
+                                        data.message ??
+                                          "OTP sent successfully.",
+                                      );
+                                      setResendCountdown(30);
+                                      setOtpValue("");
+                                      setIsOtpInvalid(false);
+                                      setOpenPhoneVerifyDialog(true);
+                                    }
                                   } catch (error) {
                                     toast.error(
                                       "Unable to send OTP right now. Please try again.",
@@ -864,6 +979,18 @@ const AddEmployee = () => {
                                 "Verify"
                               )}
                             </Button>
+                            {form.watch("isPhoneVerified") && (
+                              <Button
+                                variant="custom-one"
+                                size="icon"
+                                onClick={() => {
+                                  form.setValue("phone", "");
+                                  form.setValue("isPhoneVerified", false);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4 text-[#ffffff]" />
+                              </Button>
+                            )}
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -1063,13 +1190,13 @@ const AddEmployee = () => {
                       <Button
                         type="button"
                         onClick={() => {
-                          
                           const firstName = form.getValues("firstName")?.trim();
                           const lastName = form.getValues("lastName")?.trim();
                           const email = form.getValues("email")?.trim();
                           const phone = form.getValues("phone")?.trim();
-                          const profilePicture = form.getValues("profilePicture");
-                          
+                          const profilePicture =
+                            form.getValues("profilePicture");
+
                           if (!firstName) {
                             toast.error("Please enter first name.");
                             return;
@@ -1090,9 +1217,11 @@ const AddEmployee = () => {
                             toast.error("Please upload profile picture.");
                             return;
                           }
-                          
+
                           if (form.getValues("isPhoneVerified") === false) {
-                            toast.error("Please verify the phone number before proceeding.");
+                            toast.error(
+                              "Please verify the phone number before proceeding.",
+                            );
                             return;
                           }
                           setStep(2);
@@ -1144,12 +1273,25 @@ const AddEmployee = () => {
                           Password<p className="text-red-500">*</p>
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            {...field}
-                            type="password"
-                            placeholder="Enter to password"
-                            className="h-14 w-full max-w-127.5 rounded-[6px] border border-[#D0D5DD] px-4 py-4 text-base text-[#101828] placeholder:text-[#98A2B3]"
-                          />
+                          <div className="flex h-14 w-full max-w-127.5 items-center gap-3 rounded-[6px] border border-[#D0D5DD] bg-white px-4 py-4 box-border">
+                            <Input
+                              {...field}
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Enter to password"
+                              className="h-full flex-1 border-0 p-0 text-base text-[#101828] shadow-none placeholder:text-[#98A2B3] focus-visible:ring-0"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="text-[#667085] hover:text-[#101828] transition-colors"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-5 h-5" />
+                              ) : (
+                                <Eye className="w-5 h-5" />
+                              )}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1465,9 +1607,12 @@ const AddEmployee = () => {
                       <Button
                         type="button"
                         onClick={() => {
-                          const isAadharVerified = form.getValues("isAadharVerified");
+                          const isAadharVerified =
+                            form.getValues("isAadharVerified");
                           if (!isAadharVerified) {
-                            toast.error("Please verify Aadhar details before proceeding.");
+                            toast.error(
+                              "Please verify Aadhar details before proceeding.",
+                            );
                             return;
                           }
                           setStep(4);
@@ -2257,14 +2402,13 @@ const AddEmployee = () => {
                                   }
                                 >
                                   {field.value
-                                    ? new Date(field.value).toLocaleDateString(
-                                        "en-US",
-                                        {
-                                          year: "numeric",
-                                          month: "long",
-                                          day: "numeric",
-                                        },
-                                      )
+                                    ? parseYMDToDate(
+                                        field.value,
+                                      )?.toLocaleDateString("en-US", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                      })
                                     : "Pick a date"}
                                 </span>
                                 <CalendarIcon className="h-4 w-4 text-[#667085]" />
@@ -2278,14 +2422,12 @@ const AddEmployee = () => {
                                 mode="single"
                                 selected={
                                   field.value
-                                    ? new Date(field.value)
+                                    ? parseYMDToDate(field.value)
                                     : undefined
                                 }
                                 onSelect={(date) => {
                                   field.onChange(
-                                    date
-                                      ? date.toISOString().split("T")[0]
-                                      : "",
+                                    date ? formatDateToYMD(date) : "",
                                   );
                                 }}
                                 disabled={(date) =>
@@ -2421,52 +2563,8 @@ const AddEmployee = () => {
                       </Button>
                       <Button
                         type="button"
-                        onClick={() => {
-
-                          const paymentType = form.getValues("paymentType");
-                          if(!paymentType) {
-                            toast.error("Please select a payment type");
-                            return;
-                          }
-                          if(paymentType === "bank-account" && !form.getValues("isBankVerified")) {
-                            toast.error("Please verify bank details");
-                            return;
-                          }
-                          if(paymentType === "upi" && !form.getValues("isUpiVerified")) {
-                            toast.error("Please verify UPI details");
-                            return;
-                          }
-                          const contractDocument = form.getValues("contractDocument");
-                          if(!contractDocument) {
-                            toast.error("Please upload contract documentg");
-                            return;
-                          }
-
-                          const dateOfJoining = form.getValues("dateOfJoining");
-                          if(!dateOfJoining) {
-                            toast.error("Please select date of joining");
-                            return;
-                          }
-
-                          const salary = form.getValues("salary");
-                          if(salary === undefined || salary === null || salary === "") {
-                            toast.error("Please enter salary amount");
-                            return;
-                          }
-                          const incentive = form.getValues("incentive");
-                          if(incentive === undefined || incentive === null || incentive === "") {
-                            toast.error("Please enter incentive amount");
-                            return;
-                          }
-
-                          const payoutDate = form.getValues("payoutDate");
-                          if(!payoutDate) {
-                            toast.error("Please select payout date");
-                            return;
-                          }
-
-                          console.log(form.getValues());
-                        }}
+                        onClick={submitEmployee}
+                        disabled={isSubmitting}
                         style={{
                           width: 220,
                           height: 48,
