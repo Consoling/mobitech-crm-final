@@ -555,3 +555,30 @@ enum Role {
   TECHNICIAN
   STORE_OWNER
 }
+
+
+
+model Customers {
+  id            String   @id @default(cuid())
+  firstName     String
+  lastName      String?
+  phone         String   @unique
+  email         String?  @unique
+  address       Json?
+  purchases     Purchases[]         
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Purchases {
+  id            String   @id @default(cuid())
+  customerId    String
+  model         String
+  imei          String   @unique
+  purchaseDate  DateTime
+  price         Decimal
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer      Customers @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}

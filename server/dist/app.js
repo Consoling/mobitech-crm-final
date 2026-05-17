@@ -24,6 +24,7 @@ const verify_selfie_route_1 = __importDefault(require("./routes/diagnose_routes/
 const device_data_route_2 = __importDefault(require("./routes/diagnose_routes/device-data.route"));
 const upload_diag_data_route_1 = __importDefault(require("./routes/diagnose_routes/upload-diag-data.route"));
 const team_route_1 = __importDefault(require("./routes/team.route"));
+const customer_route_1 = __importDefault(require("./routes/customer.route"));
 const get_models_by_brand_route_1 = __importDefault(require("./routes/pickup_app_routes/get-models-by-brand.route"));
 const get_individual_mode_data_route_1 = __importDefault(require("./routes/pickup_app_routes/get-individual-mode-data.route"));
 const connectDb_1 = require("./lib/connectDb");
@@ -65,6 +66,7 @@ app.use("/api/v1/models", models_route_1.default);
 app.use("/api/v1/reports", qcreport_route_1.default);
 app.use("/api/v1/team", team_route_1.default);
 app.use("/api/v2/ocr", ocr_route_1.default);
+app.use("/api/v1/customers", customer_route_1.default);
 app.use("/api/v2/device-data", device_data_route_1.default);
 app.use(`/api/v1/diagnose`, auth_route_2.default);
 app.use(`/api/v1/diagnose`, mfa_route_2.default);

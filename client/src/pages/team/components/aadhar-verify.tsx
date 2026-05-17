@@ -103,7 +103,7 @@ const AadharVerifyDialog = ({
   const verifyAadhar = async () => {
     
     const aadharNumber = form.getValues().aadharNumber ?? "";
-    console.log("Verifying Aadhaar number:", aadharNumber);
+    // console.log("Verifying Aadhaar number:", aadharNumber);
     setIsSending(true);
     if (aadharNumber.length !== 12) {
       toast.error("Please enter a valid 12-digit Aadhaar number.");

@@ -354,7 +354,7 @@ router.get("/summary", async (req: Request, res: Response) => {
           where: { ...employeeBaseWhere, status: UserStatus.ACTIVE },
         }),
         prisma.user.count({
-          where: { ...employeeBaseWhere, status: UserStatus.INACTIVE },
+          where: { ...employeeBaseWhere, status: { in: [UserStatus.INACTIVE, UserStatus.TERMINATED] } },
         }),
       ]);
 
@@ -369,6 +369,8 @@ router.get("/summary", async (req: Request, res: Response) => {
         cachedAt: new Date().toISOString(),
       },
     };
+
+    // console.log("Team summary payload:", payload);
 
     await writeRouteCache(cacheKey, payload, SUMMARY_TTL_SECONDS);
     return withCachingHeaders(req, res, payload, SUMMARY_TTL_SECONDS);
@@ -1580,7 +1582,7 @@ router.post(
         },
       );
 
-      console.log("QuickKYC OTP Response Status:", response.status);
+      // console.log("QuickKYC OTP Response Status:", response.status);
 
       const data = await response.json();
 
@@ -2169,6 +2171,238 @@ router.post(`/check-phone`, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("check-phone error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.put(`/employees/:employeeId`, async (req: Request, res: Response) => {
+  try {
+    const { employeeId } = req.params as { employeeId: string };
+    if (!employeeId) {
+      return res.status(400).json({ message: "employeeId is required" });
+    }
+
+    // Find the user by employeeId in any role table
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { manager: { employeeId } },
+          { technician: { employeeId } },
+          { fieldExecutive: { employeeId } },
+          { salesExecutive: { employeeId } },
+          { admin: { employeeId } },
+        ],
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    const body = req.body ?? {};
+
+    const firstName = body.firstName ? String(body.firstName).trim() : undefined;
+    const lastName = body.lastName ? String(body.lastName).trim() : undefined;
+    const aadharId = body.aadharId ? String(body.aadharId).trim() : undefined;
+    const email = body.email ? String(body.email).trim() : undefined;
+    const phone = body.phone ? String(body.phone).trim() : undefined;
+    const isPhoneVerified = Boolean(body.isPhoneVerified);
+    const salary =
+      body.salary !== undefined && body.salary !== ""
+        ? Number(body.salary)
+        : undefined;
+    const payoutDate =
+      body.payoutDate !== undefined && body.payoutDate !== ""
+        ? Number(body.payoutDate)
+        : undefined;
+    const storeId = body.storeId ? String(body.storeId).trim() : undefined;
+    const dateOfJoining = body.dateOfJoining
+      ? new Date(String(body.dateOfJoining))
+      : undefined;
+    const dateOfTermination = body.dateOfTermination
+      ? new Date(String(body.dateOfTermination))
+      : undefined;
+
+    const bankName = body.bankName ? String(body.bankName).trim() : undefined;
+    const accountNumber = body.accountNumber
+      ? String(body.accountNumber).trim()
+      : undefined;
+    const ifsc = body.ifsc ? String(body.ifsc).trim() : undefined;
+    const beneficiaryName = body.beneficiaryName
+      ? String(body.beneficiaryName).trim()
+      : undefined;
+    const upiId = body.upiId ? String(body.upiId).trim() : undefined;
+
+    // Update user core fields
+    const userUpdateData: any = {};
+    if (email !== undefined) userUpdateData.email = email || null;
+    if (phone !== undefined) {
+      userUpdateData.phone = phone;
+      userUpdateData.phoneVerified = Boolean(isPhoneVerified);
+    }
+    if (salary !== undefined) userUpdateData.salary = salary;
+    if (payoutDate !== undefined) userUpdateData.payoutDate = payoutDate;
+    if (storeId !== undefined) userUpdateData.storeId = storeId || null;
+    if (dateOfJoining !== undefined) userUpdateData.dateOfJoining = dateOfJoining || null;
+    if (dateOfTermination !== undefined)
+      userUpdateData.dateOfTermination = dateOfTermination || null;
+
+    await prisma.user.update({ where: { id: user.id }, data: userUpdateData });
+
+    // Upsert role-specific record(s). Ensure role records exist so BankDetails FK can reference them.
+    // Admin
+    if (body.role === "admin" || body.isAdmin) {
+      await prisma.admin.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          employeeId,
+          firstName: firstName || null,
+          lastName: lastName || null,
+        },
+        update: {
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+        },
+      });
+    }
+
+    // Manager
+    if (user.role === Role.MANAGER || body.role === "store-manager") {
+      await prisma.manager.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          employeeId,
+          firstName: firstName || "",
+          lastName: lastName || "",
+          aadharId: aadharId || `NA-${employeeId}-MANAGER`,
+        },
+        update: {
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          aadharId: aadharId || undefined,
+        },
+      });
+    }
+
+    // Technician
+    if (user.role === Role.TECHNICIAN || body.role === "technician") {
+      await prisma.technician.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          employeeId,
+          firstName: firstName || "",
+          lastName: lastName || "",
+          aadharId: aadharId || `NA-${employeeId}-TECHNICIAN`,
+        },
+        update: {
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          aadharId: aadharId || undefined,
+        },
+      });
+    }
+
+    // Field Executive
+    if (user.role === Role.FIELD_EXECUTIVE || body.role === "field-executive") {
+      await prisma.fieldExecutive.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          employeeId,
+          firstName: firstName || "",
+          lastName: lastName || "",
+          aadharId: aadharId || `NA-${employeeId}-FIELD`,
+        },
+        update: {
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          aadharId: aadharId || undefined,
+        },
+      });
+    }
+
+    // Sales Executive
+    if (
+      user.role === Role.MARKETING_EXECUTIVE ||
+      body.role === "sales-agent"
+    ) {
+      await prisma.salesExecutive.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          employeeId,
+          firstName: firstName || "",
+          lastName: lastName || "",
+          aadharId: aadharId || `NA-${employeeId}-SALES`,
+        },
+        update: {
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          aadharId: aadharId || undefined,
+        },
+      });
+    }
+
+    // Upsert BankDetails: find existing by any role link and update, otherwise create
+    const existingBank = await prisma.bankDetails.findFirst({
+      where: {
+        OR: [
+          { managerId: user.id },
+          { technicianId: user.id },
+          { fieldExecId: user.id },
+          { salesExecId: user.id },
+          { storeId: user.id },
+        ],
+      },
+    });
+
+    const bankPayload: any = {};
+    if (bankName !== undefined) bankPayload.bankName = bankName || null;
+    if (accountNumber !== undefined)
+      bankPayload.accountNumber = accountNumber || null;
+    if (ifsc !== undefined) bankPayload.ifsc = ifsc || null;
+    if (beneficiaryName !== undefined)
+      bankPayload.beneficiaryName = beneficiaryName || null;
+    if (upiId !== undefined) bankPayload.upiId = upiId || null;
+
+    if (
+      bankName !== undefined ||
+      accountNumber !== undefined ||
+      ifsc !== undefined ||
+      beneficiaryName !== undefined ||
+      upiId !== undefined
+    ) {
+      if (existingBank) {
+        await prisma.bankDetails.update({
+          where: { id: existingBank.id },
+          data: bankPayload,
+        });
+      } else {
+        // attach to the correct role column based on user's role
+        const createData: any = { ...bankPayload };
+        if (user.role === Role.MANAGER) createData.managerId = user.id;
+        else if (user.role === Role.TECHNICIAN) createData.technicianId = user.id;
+        else if (user.role === Role.FIELD_EXECUTIVE)
+          createData.fieldExecId = user.id;
+        else if (user.role === Role.MARKETING_EXECUTIVE)
+          createData.salesExecId = user.id;
+        else createData.managerId = user.id; // fallback
+
+        await prisma.bankDetails.create({ data: createData });
+      }
+    }
+
+    return res.status(200).json({ message: "Employee updated successfully" });
+  } catch (error: any) {
+    console.error("update-employee error:", error);
+    if (error?.code === "P2002") {
+      return res
+        .status(400)
+        .json({ message: "Duplicate value violates unique constraint" });
+    }
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });

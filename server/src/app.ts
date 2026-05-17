@@ -20,7 +20,7 @@ import verifySelfieRoutes from "./routes/diagnose_routes/verify-selfie.route";
 import getDeviceFromModelCodeRoute from "./routes/diagnose_routes/device-data.route";
 import uploadDiagDataRoute from "./routes/diagnose_routes/upload-diag-data.route";
 import teamRoutes from "./routes/team.route";
-
+import customerRoutes from './routes/customer.route';
 import getModelsByBrandRoute from "./routes/pickup_app_routes/get-models-by-brand.route";
 import getIndividualModelDataRoute from "./routes/pickup_app_routes/get-individual-mode-data.route";
 import { connectDb } from "./lib/connectDb";
@@ -69,6 +69,7 @@ app.use("/api/v1/models", modelsRoutes);
 app.use("/api/v1/reports", qcReportRoutes);
 app.use("/api/v1/team", teamRoutes);
 app.use("/api/v2/ocr", ocrRoutes);
+app.use("/api/v1/customers", customerRoutes);
 app.use("/api/v2/device-data", deviceDataRoute);
 
 app.use(`/api/v1/diagnose`, diagnoseAuthRoutes);

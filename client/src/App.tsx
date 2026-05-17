@@ -27,6 +27,10 @@ import ViewStore from "./pages/team/ViewStore";
 import EditStore from "./pages/team/EditStore";
 import AddEmployee from "./pages/team/AddEmployee";
 import AddStore from "./pages/team/AddStore";
+import CustomerDashboard from "./pages/customers/CustomerDashboard";
+import ManageCustomer from "./pages/customers/ManageCustomer";
+import ViewCustomer from "./pages/customers/ViewCustomer";
+import AddCustomer from "./pages/customers/AddCustomer";
 
 
 const App = () => {
@@ -69,6 +73,10 @@ const App = () => {
           <Route path='/manage-team/edit-store/:storeID' element={<EditStore />} />
           <Route path='/manage-team/add-employee' element={<AddEmployee />} />
           <Route path='/manage-team/add-store' element={<AddStore />} />
+          <Route path='/clients/customers' element={<CustomerDashboard />} />
+          <Route path='/clients/add-customer' element={<AddCustomer />} />
+          <Route path='/clients/edit-customer/:customerId' element={<ManageCustomer />} />
+          <Route path='/clients/view-customer/:customerId' element={<ViewCustomer />} />
 
             {/* Add your protected routes here */}
             {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}
