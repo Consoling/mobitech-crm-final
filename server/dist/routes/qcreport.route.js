@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const prisma_1 = require("../config/prisma");
+const filterdeviceINfo_1 = require("../utils/filterdeviceINfo");
 const router = express_1.default.Router();
 // Helper function to normalize test status values
 const normalizeStatus = (status) => {
@@ -409,16 +410,17 @@ router.post(`/get-qc-report/:reportId`, async (req, res) => {
             }
             return status;
         };
+        const normalizedDevice = (0, filterdeviceINfo_1.normalizeDeviceInfo)(report.deviceInfo);
         const filteredReport = {
             upperLayerData: {
                 employeeImage: report.employeeImageKey,
                 employeeId: report.employeeId,
                 employeeName: report.employeeName,
                 createdAt: report.createdAt.toLocaleString(),
-                brand: report.deviceInfo ? report.deviceInfo.brand : null,
-                model: report.deviceInfo ? report.deviceInfo.model : null,
-                ram: report.deviceInfo ? report.deviceInfo.ram : null,
-                storage: report.deviceInfo ? report.deviceInfo.storage : null,
+                brand: normalizedDevice.brand,
+                model: normalizedDevice.model,
+                ram: normalizedDevice.ram,
+                storage: normalizedDevice.storage,
                 imeiVerifiedModel: report.imeiDetectedModel,
                 imei1: report.imei1,
                 imei2: report.imei2,

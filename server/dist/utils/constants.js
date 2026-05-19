@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LOG_LEVELS = exports.TEST_STATUS = exports.PRISMA_ERROR_CODES = exports.REGEX_PATTERNS = exports.VALIDATION_CONSTRAINTS = exports.SUCCESS_MESSAGES = exports.ERROR_MESSAGES = exports.HTTP_STATUS = void 0;
+exports.KNOWN_BRANDS = exports.LOG_LEVELS = exports.TEST_STATUS = exports.PRISMA_ERROR_CODES = exports.REGEX_PATTERNS = exports.VALIDATION_CONSTRAINTS = exports.SUCCESS_MESSAGES = exports.ERROR_MESSAGES = exports.HTTP_STATUS = void 0;
 /**
  * HTTP Status Codes
  */
@@ -85,3 +85,25 @@ exports.LOG_LEVELS = {
     ERROR: "error",
     DEBUG: "debug",
 };
+exports.KNOWN_BRANDS = new Set([
+    "apple",
+    "asus",
+    "google",
+    "honor",
+    "huawei",
+    "infinix",
+    "iqoo",
+    "lenovo",
+    "motorola",
+    "nokia",
+    "nothing",
+    "oneplus",
+    "oppo",
+    "poco",
+    "realme",
+    "samsung",
+    "sony",
+    "tecno",
+    "vivo",
+    "xiaomi",
+]);

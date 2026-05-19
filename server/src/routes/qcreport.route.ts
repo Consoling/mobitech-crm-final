@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import { prisma } from "../config/prisma";
+import { normalizeDeviceInfo } from "../utils/filterdeviceINfo";
 
 interface DeviceInfo {
   brand: string;
@@ -468,16 +469,17 @@ router.post(`/get-qc-report/:reportId`, async (req: Request, res: Response) => {
       return status;
     };
 
+    const normalizedDevice = normalizeDeviceInfo(report.deviceInfo);
     const filteredReport = {
       upperLayerData: {
         employeeImage: report.employeeImageKey,
         employeeId: report.employeeId,
         employeeName: report.employeeName,
         createdAt: report.createdAt.toLocaleString(),
-        brand: report.deviceInfo ? (report.deviceInfo as any).brand : null,
-        model: report.deviceInfo ? (report.deviceInfo as any).model : null,
-        ram: report.deviceInfo ? (report.deviceInfo as any).ram : null,
-        storage: report.deviceInfo ? (report.deviceInfo as any).storage : null,
+        brand: normalizedDevice.brand,
+        model: normalizedDevice.model,
+        ram: normalizedDevice.ram,
+        storage: normalizedDevice.storage,
         imeiVerifiedModel: report.imeiDetectedModel,
         imei1: report.imei1,
         imei2: report.imei2,

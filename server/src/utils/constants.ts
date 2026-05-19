@@ -89,3 +89,28 @@ export const LOG_LEVELS = {
   ERROR: "error",
   DEBUG: "debug",
 } as const;
+
+
+
+export const KNOWN_BRANDS = new Set([
+  "apple",
+  "asus",
+  "google",
+  "honor",
+  "huawei",
+  "infinix",
+  "iqoo",
+  "lenovo",
+  "motorola",
+  "nokia",
+  "nothing",
+  "oneplus",
+  "oppo",
+  "poco",
+  "realme",
+  "samsung",
+  "sony",
+  "tecno",
+  "vivo",
+  "xiaomi",
+]);

@@ -46,6 +46,7 @@ const redis_1 = require("../config/redis");
 const enums_1 = require("../generated/prisma/enums");
 const env_1 = require("../utils/env");
 const s3_1 = require("../utils/s3");
+const id_gen_1 = require("../utils/id-gen");
 const router = express_1.default.Router();
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -2134,6 +2135,87 @@ router.put(`/employees/:employeeId`, async (req, res) => {
             return res
                 .status(400)
                 .json({ message: "Duplicate value violates unique constraint" });
+        }
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+class BadRequestError extends Error {
+    constructor(message) {
+        super(message);
+        this.statusCode = 400;
+    }
+}
+const required = (value, fieldName) => {
+    const parsed = String(value ?? "").trim();
+    if (!parsed) {
+        throw new BadRequestError(`${fieldName} is required`);
+    }
+    return parsed;
+};
+router.post(`/add-store`, async (req, res) => {
+    try {
+        const body = req.body ?? {};
+        const name = required(body.ownerName, "Owner name");
+        const phone = required(body.ownerPhone, "Owner phone");
+        const email = required(body.ownerEmail, "Owner email");
+        const storeName = required(body.storeName, "Store name");
+        const storeAddress = {
+            city: required(body.city, "City"),
+            pincode: required(body.pinCode, "Pincode"),
+            state: required(body.state, "State"),
+            streetAddress: required(body.streetAddress, "Street address"),
+        };
+        const password = required(body.password, "Password");
+        let storeId = `STR${(0, id_gen_1.generateSixDigitNumber)()}`;
+        const hashedPass = await (0, bcrypt_1.hash)(password, 10);
+        const existing = await prisma_1.prisma.user.findUnique({ where: { phone, email } });
+        const existingStore = await prisma_1.prisma.store.findUnique({ where: { storeId } });
+        if (existingStore) {
+            storeId = `STR${(0, id_gen_1.generateSixDigitNumber)()}`;
+        }
+        if (existing) {
+            return res
+                .status(400)
+                .json({ message: "User with this phone or email already exists" });
+        }
+        const created = await prisma_1.prisma.user.create({
+            data: {
+                phone,
+                email,
+                password: hashedPass,
+                isAdmin: false,
+                role: enums_1.Role.STORE_OWNER,
+                store: {
+                    create: {
+                        storeId,
+                        ownerName: name,
+                        storeName: storeName,
+                        ownerPhone: phone,
+                        ownerEmail: email,
+                        address: {
+                            create: {
+                                streetAddress: storeAddress.streetAddress,
+                                city: storeAddress.city,
+                                state: storeAddress.state,
+                                pinCode: storeAddress.pincode,
+                                country: "India",
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        if (!created) {
+            return res.status(500).json({ message: "Failed to create store owner" });
+        }
+        return res.status(201).json({
+            success: true,
+        });
+    }
+    catch (error) {
+        console.error("add-store error:", error);
+        if (error instanceof BadRequestError) {
+            return res.status(error.statusCode).json({ message: error.message });
         }
         return res.status(500).json({ message: "Internal Server Error" });
     }

@@ -14,6 +14,7 @@ import { redisClient } from "../config/redis";
 import { Role, UserStatus } from "../generated/prisma/enums";
 import { SYS_ENV } from "../utils/env";
 import { s3Client } from "../utils/s3";
+import { generateSixDigitNumber } from "../utils/id-gen";
 const router = express.Router();
 
 const DEFAULT_PAGE = 1;
@@ -2406,5 +2407,99 @@ router.put(`/employees/:employeeId`, async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+
+class BadRequestError extends Error {
+  statusCode: number;
+  constructor(message: string) {
+    super(message);
+    this.statusCode = 400;
+  }
+}
+
+const required = (value: unknown, fieldName: string) => {
+  const parsed = String(value ?? "").trim();
+  if (!parsed) {
+    throw new BadRequestError(`${fieldName} is required`);
+  }
+
+  return parsed;
+}
+
+router.post(`/add-store`, async (req: Request, res: Response) => {
+  try {
+    const body = req.body ?? {};
+
+    const name = required(body.ownerName, "Owner name");
+    const phone = required(body.ownerPhone, "Owner phone");
+    const email = required(body.ownerEmail, "Owner email");
+    const storeName = required(body.storeName, "Store name");
+    const storeAddress = {
+      city: required(body.city, "City"),
+      pincode: required(body.pinCode, "Pincode"),
+      state: required(body.state, "State"),
+      streetAddress: required(body.streetAddress, "Street address"),
+    };
+    const password = required(body.password, "Password");
+
+    let storeId =`STR${generateSixDigitNumber()}`
+
+
+const hashedPass = await hash(password, 10);
+
+const existing = await prisma.user.findUnique({ where: { phone, email } });
+const existingStore = await prisma.store.findUnique({ where: { storeId } });
+
+if (existingStore) {
+storeId = `STR${generateSixDigitNumber()}`;
+}
+
+if (existing) {
+  return res
+    .status(400)
+    .json({ message: "User with this phone or email already exists" });
+}
+
+const created = await prisma.user.create({
+  data: {
+    phone,
+    email,
+    password: hashedPass,
+    isAdmin: false,
+    role: Role.STORE_OWNER,
+    store: {
+      create: {
+        storeId,
+        ownerName: name,
+        storeName: storeName,
+        ownerPhone: phone,
+        ownerEmail: email,
+        address: {
+          create: {
+            streetAddress: storeAddress.streetAddress,
+            city: storeAddress.city,
+            state: storeAddress.state,
+            pinCode: storeAddress.pincode,
+            country: "India",
+          }
+        }
+      }
+    }
+  }});
+  if(!created) {
+    return res.status(500).json({ message: "Failed to create store owner" });
+  }
+  return res.status(201).json({
+    success: true,
+  });
+  } catch (error) {
+    console.error("add-store error:", error);
+
+    if(error instanceof BadRequestError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+})
 
 export default router;

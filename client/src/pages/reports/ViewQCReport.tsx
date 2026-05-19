@@ -168,8 +168,12 @@ const ViewQCReport = () => {
       const normalized = value.toLowerCase();
       if (normalized.includes("pass")) return "Passed";
       if (normalized.includes("fail")) return "Failed";
+     
       if (normalized.includes("skip")) return "Skipped";
+    } else if (value === false) {
+      return "Failed";
     }
+
     
     return null;
   };
