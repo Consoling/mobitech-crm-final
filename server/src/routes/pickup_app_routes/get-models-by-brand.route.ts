@@ -7,6 +7,8 @@ router.post("/get-models-by-brand", async (req: Request, res: Response) => {
   try {
     const { brand, device } = req.body;
 
+    console.log("Received request for brand:", brand, "and device:", device);
+
     if (!brand) {
       return res.status(400).json({ error: "Brand is required" });
     }

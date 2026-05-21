@@ -23,6 +23,36 @@ import teamRoutes from "./routes/team.route";
 import customerRoutes from './routes/customer.route';
 import getModelsByBrandRoute from "./routes/pickup_app_routes/get-models-by-brand.route";
 import getIndividualModelDataRoute from "./routes/pickup_app_routes/get-individual-mode-data.route";
+import getQCReportInitDataRoute from "./routes/pickup_app_routes/get-qc-report-init-data.route";
+import appLoginRoute from "./routes/pickup_app_routes/auth/login.route";
+import verifyAppOtpRoute from "./routes/pickup_app_routes/auth/verify-otp.route";
+import verifyAppTokenRoute from "./routes/pickup_app_routes/auth/verify-token.route";
+import fetchInitAppDataRoute from "./routes/pickup_app_routes/auth/fetch-user-data.route";
+
+import uploadManualDiagnosticsDataRoute from "./routes/pickup_app_routes/self-diagnostics/upload-data.route";
+import fetchManualDiagnosticsDataRoute from "./routes/pickup_app_routes/self-diagnostics/get-data.route";
+
+import generateDeclarationRoute from "./routes/pickup_app_routes/declaration/generate-declaration.route";
+import getDeclarationRoute from "./routes/pickup_app_routes/declaration/get-declaration.route";
+import acceptDeclarationRoute from "./routes/pickup_app_routes/declaration/accept-declaration.route";
+import checkDeclarationStatusRoute from "./routes/pickup_app_routes/declaration/check-declaration.route";
+
+import sendOtpForPickupRoute from "./routes/pickup_app_routes/otp/send.route"
+import verifyOtpForPickupRoute from "./routes/pickup_app_routes/otp/verify.route"
+import sendOtpForVerificationPickupRoute from "./routes/pickup_app_routes/otp/send-verification-otp.route"
+
+import verifyBankForPickupRoute from "./routes/pickup_app_routes/bank/verify-bank.route";
+import verifyUPIForPickupRoute from "./routes/pickup_app_routes/upi/verify-upi.route";
+
+import generateAadharOtpForPickupRoute from "./routes/pickup_app_routes/aadhar/generate-otp.route";
+import verifyAadharOtpForPickupRoute from "./routes/pickup_app_routes/aadhar/verify-otp.route";
+
+import verifyVoterIdRoute from "./routes/pickup_app_routes/voter-id/verify.route";
+
+import generatePreSignedUrlRoute from "./routes/pickup_app_routes/final-upload/pre-signed-url.route";
+import getFinalUrlRoute from "./routes/pickup_app_routes/final-upload/get-final-url.route";
+import uploadFinalDataRoute from "./routes/pickup_app_routes/final-upload/upload-data.route";
+
 import { connectDb } from "./lib/connectDb";
 const app = express();
 const allowedOrigins = Array.from(
@@ -78,8 +108,36 @@ app.use(`/api/v1/diagnose`, verifySelfieRoutes);
 app.use(`/api/v1/diagnose`, getDeviceFromModelCodeRoute);
 app.use(`/api/v1/diagnose`, uploadDiagDataRoute);
 
-app.use(`/api/v1/pickup`, getModelsByBrandRoute);
-app.use(`/api/v1/pickup`, getIndividualModelDataRoute);
+app.use(`/api/v2/pickup`, getModelsByBrandRoute);
+app.use(`/api/v2/pickup`, getIndividualModelDataRoute);
+app.use(`/api/v2`, getQCReportInitDataRoute);
+app.use(`/api/v2/pickup`, appLoginRoute)
+app.use(`/api/v2/pickup`, verifyAppOtpRoute)
+app.use(`/api/v2/pickup`, verifyAppTokenRoute)
+app.use(`/api/v2/pickup`, fetchInitAppDataRoute);
+app.use(`/api/v2/pickup`, uploadManualDiagnosticsDataRoute);
+app.use(`/api/v2/pickup`, fetchManualDiagnosticsDataRoute);
+app.use(`/api/v2/pickup`, generateDeclarationRoute);
+app.use(`/api/v2/pickup`, getDeclarationRoute);
+app.use(`/api/v2/pickup`, acceptDeclarationRoute);
+app.use(`/api/v2/pickup`, checkDeclarationStatusRoute);
+
+app.use(`/api/v2/pickup`, sendOtpForPickupRoute);
+app.use(`/api/v2/pickup`, verifyOtpForPickupRoute);
+app.use(`/api/v2/pickup`, sendOtpForVerificationPickupRoute);
+
+app.use(`/api/v2/pickup`, verifyBankForPickupRoute);
+app.use(`/api/v2/pickup`, verifyUPIForPickupRoute);
+
+app.use(`/api/v2/pickup/aadhar`, generateAadharOtpForPickupRoute);
+app.use(`/api/v2/pickup/aadhar`, verifyAadharOtpForPickupRoute);
+
+app.use(`/api/v2/pickup/voter-id`, verifyVoterIdRoute);
+
+app.use(`/api/v2/pickup`, generatePreSignedUrlRoute);
+app.use(`/api/v2/pickup`, getFinalUrlRoute);
+app.use(`/api/v2/pickup`, uploadFinalDataRoute);
+
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
   try {
     const body = req.body;

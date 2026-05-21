@@ -22,4 +22,6 @@ export const SYS_ENV = {
     FAST2SMS_API_KEY: process.env.FAST2SMS_API_KEY,
     FAST2SMS_API_ENDPOINT: process.env.FAST2SMS_API_ENDPOINT,
     QUICKEKYC_KEY: process.env.QUICKEKYC_KEY,
+    EMAIL_USER: process.env.EMAIL_USER,
+    EMAIL_PASS: process.env.EMAIL_PASS,
 }

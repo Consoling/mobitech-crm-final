@@ -31,6 +31,7 @@ import CustomerDashboard from "./pages/customers/CustomerDashboard";
 import ManageCustomer from "./pages/customers/ManageCustomer";
 import ViewCustomer from "./pages/customers/ViewCustomer";
 import AddCustomer from "./pages/customers/AddCustomer";
+import DeclarationPage from "./pages/declaration/Declaration";
 
 
 const App = () => {
@@ -41,6 +42,7 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/" element={<Navigate to="/login" />} />
           <Route path="/mdt" element={<APKDownload />} />
+          <Route path="/declaration/:id" element={<DeclarationPage />} />
           
           <Route element={<PublicLayout />}>
             <Route path="/login" element={<Login />} />

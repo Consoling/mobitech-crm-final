@@ -9,6 +9,7 @@ const router = express_1.default.Router();
 router.post("/get-models-by-brand", async (req, res) => {
     try {
         const { brand, device } = req.body;
+        console.log("Received request for brand:", brand, "and device:", device);
         if (!brand) {
             return res.status(400).json({ error: "Brand is required" });
         }

@@ -114,3 +114,27 @@ export const KNOWN_BRANDS = new Set([
   "vivo",
   "xiaomi",
 ]);
+
+
+export function getTokenInfo(payload: any) {
+  if (!payload.iat || !payload.exp) {
+    return null;
+  }
+
+  const issuedAt = new Date(payload.iat * 1000);
+  const expiresAt = new Date(payload.exp * 1000);
+  const now = new Date();
+  
+  const timeLeft = expiresAt.getTime() - now.getTime();
+  const isExpired = timeLeft <= 0;
+  
+  return {
+    issuedAt: issuedAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    timeLeftMs: Math.max(0, timeLeft),
+    timeLeftHours: Math.max(0, timeLeft / (1000 * 60 * 60)),
+    timeLeftDays: Math.max(0, timeLeft / (1000 * 60 * 60 * 24)),
+    isExpired,
+    isValid: !isExpired
+  };
+}

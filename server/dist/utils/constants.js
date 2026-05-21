@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KNOWN_BRANDS = exports.LOG_LEVELS = exports.TEST_STATUS = exports.PRISMA_ERROR_CODES = exports.REGEX_PATTERNS = exports.VALIDATION_CONSTRAINTS = exports.SUCCESS_MESSAGES = exports.ERROR_MESSAGES = exports.HTTP_STATUS = void 0;
+exports.getTokenInfo = getTokenInfo;
 /**
  * HTTP Status Codes
  */
@@ -107,3 +108,22 @@ exports.KNOWN_BRANDS = new Set([
     "vivo",
     "xiaomi",
 ]);
+function getTokenInfo(payload) {
+    if (!payload.iat || !payload.exp) {
+        return null;
+    }
+    const issuedAt = new Date(payload.iat * 1000);
+    const expiresAt = new Date(payload.exp * 1000);
+    const now = new Date();
+    const timeLeft = expiresAt.getTime() - now.getTime();
+    const isExpired = timeLeft <= 0;
+    return {
+        issuedAt: issuedAt.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        timeLeftMs: Math.max(0, timeLeft),
+        timeLeftHours: Math.max(0, timeLeft / (1000 * 60 * 60)),
+        timeLeftDays: Math.max(0, timeLeft / (1000 * 60 * 60 * 24)),
+        isExpired,
+        isValid: !isExpired
+    };
+}

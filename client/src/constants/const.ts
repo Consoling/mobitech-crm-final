@@ -165,6 +165,10 @@ export const SYS_VAR = {
     import.meta.env.VITE_BACKEND_URL,
     "http://localhost:4000",
   ),
+  BACKEND_URL_V2: normalizeBaseUrl(
+    import.meta.env.VITE_BACKEND_URL_V2,
+    "http://localhost:4000",
+  ),
 };
 
  export const BANK_NAMES = [
