@@ -32,6 +32,10 @@ import ManageCustomer from "./pages/customers/ManageCustomer";
 import ViewCustomer from "./pages/customers/ViewCustomer";
 import AddCustomer from "./pages/customers/AddCustomer";
 import DeclarationPage from "./pages/declaration/Declaration";
+import PartyDashboard from "./pages/parties/PartyDashboard";
+import AddParty from "./pages/parties/AddParty";
+import ViewParty from "./pages/parties/ViewParties";
+import ManageParty from "./pages/parties/ManageParties";
 
 
 const App = () => {
@@ -79,6 +83,10 @@ const App = () => {
           <Route path='/clients/add-customer' element={<AddCustomer />} />
           <Route path='/clients/edit-customer/:customerId' element={<ManageCustomer />} />
           <Route path='/clients/view-customer/:customerId' element={<ViewCustomer />} />
+          <Route path='/clients/parties' element={<PartyDashboard />} />
+          <Route path='/clients/add-party' element={<AddParty />} />
+          <Route path='/clients/view-party/:partyId' element={<ViewParty />} />
+          <Route path='/clients/edit-party/:partyId' element={<ManageParty />} />
 
             {/* Add your protected routes here */}
             {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}

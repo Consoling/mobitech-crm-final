@@ -569,6 +569,18 @@ model Customers {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+model Parties {
+  id            String   @id @default(cuid())
+  firstName     String
+  lastName      String?
+  phone         String   @unique
+  email         String?  @unique
+  address       Json?
+  bankDetails   Json?
+  purchases     PartyPurchases[]         
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
 
 model Purchases {
   id            String   @id @default(cuid())
@@ -577,8 +589,22 @@ model Purchases {
   imei          String   @unique
   purchaseDate  DateTime
   price         Decimal
+  // bankDetails    Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   customer      Customers @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model PartyPurchases {
+  id            String   @id @default(cuid())
+  partyId       String
+  model         String
+  imei          String   @unique
+  purchaseDate  DateTime
+  price         Decimal
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  party         Parties   @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }

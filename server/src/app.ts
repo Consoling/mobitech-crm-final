@@ -28,7 +28,7 @@ import appLoginRoute from "./routes/pickup_app_routes/auth/login.route";
 import verifyAppOtpRoute from "./routes/pickup_app_routes/auth/verify-otp.route";
 import verifyAppTokenRoute from "./routes/pickup_app_routes/auth/verify-token.route";
 import fetchInitAppDataRoute from "./routes/pickup_app_routes/auth/fetch-user-data.route";
-
+import partiesRoutes from "./routes/parties.route";
 import uploadManualDiagnosticsDataRoute from "./routes/pickup_app_routes/self-diagnostics/upload-data.route";
 import fetchManualDiagnosticsDataRoute from "./routes/pickup_app_routes/self-diagnostics/get-data.route";
 
@@ -100,6 +100,7 @@ app.use("/api/v1/reports", qcReportRoutes);
 app.use("/api/v1/team", teamRoutes);
 app.use("/api/v2/ocr", ocrRoutes);
 app.use("/api/v1/customers", customerRoutes);
+app.use("/api/v1/parties", partiesRoutes);
 app.use("/api/v2/device-data", deviceDataRoute);
 
 app.use(`/api/v1/diagnose`, diagnoseAuthRoutes);

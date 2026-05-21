@@ -32,6 +32,7 @@ const login_route_1 = __importDefault(require("./routes/pickup_app_routes/auth/l
 const verify_otp_route_1 = __importDefault(require("./routes/pickup_app_routes/auth/verify-otp.route"));
 const verify_token_route_1 = __importDefault(require("./routes/pickup_app_routes/auth/verify-token.route"));
 const fetch_user_data_route_1 = __importDefault(require("./routes/pickup_app_routes/auth/fetch-user-data.route"));
+const parties_route_1 = __importDefault(require("./routes/parties.route"));
 const upload_data_route_1 = __importDefault(require("./routes/pickup_app_routes/self-diagnostics/upload-data.route"));
 const get_data_route_1 = __importDefault(require("./routes/pickup_app_routes/self-diagnostics/get-data.route"));
 const generate_declaration_route_1 = __importDefault(require("./routes/pickup_app_routes/declaration/generate-declaration.route"));
@@ -89,6 +90,7 @@ app.use("/api/v1/reports", qcreport_route_1.default);
 app.use("/api/v1/team", team_route_1.default);
 app.use("/api/v2/ocr", ocr_route_1.default);
 app.use("/api/v1/customers", customer_route_1.default);
+app.use("/api/v1/parties", parties_route_1.default);
 app.use("/api/v2/device-data", device_data_route_1.default);
 app.use(`/api/v1/diagnose`, auth_route_2.default);
 app.use(`/api/v1/diagnose`, mfa_route_2.default);
