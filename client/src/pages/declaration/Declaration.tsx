@@ -80,38 +80,42 @@ const DeclarationPage = () => {
   // Zod schema for last4
   const last4Schema = z.object({ last4: z.string().regex(/^[0-9]{4}$/, "Please enter exactly 4 digits") });
 
-  const { control, handleSubmit, setValue, watch, formState } = useForm({
+  const { control, handleSubmit, setValue} = useForm({
     resolver: zodResolver(last4Schema),
     defaultValues: { last4: "" },
   });
 
-  const last4 = watch("last4");
+  // const last4 = watch("last4");
 
   // removed inline handler - Controller will manage input changes
 
   // Helper: sanitize backend URL from env (strip quotes, fix slashes, remove trailing slash)
-  const sanitizeBackendUrl = (raw?: string | null) => {
-    if (!raw) return "";
-    let u = raw.trim();
-    // strip surrounding single or double quotes
-    if ((u.startsWith("'") && u.endsWith("'")) || (u.startsWith('"') && u.endsWith('"'))) {
-      u = u.slice(1, -1);
-    }
-    // if protocol missing or malformed like 'http:/host', fix it
-    if (!/^https?:\/\//i.test(u)) {
-      // replace any leading protocol with proper double slash
-      u = u.replace(/^https?:\/+/, (m) => m.replace(/\/+$/, "") + "//");
-      if (!/^https?:\/\//i.test(u)) {
-        u = "http://" + u;
-      }
-    }
-    // remove trailing slashes
-    u = u.replace(/\/+$/g, "");
-    return u;
-  };
+  // const sanitizeBackendUrl = (raw?: string | null) => {
+  //   if (!raw) return "";
+  //   let u = raw.trim();
+  //   // strip surrounding single or double quotes
+  //   if ((u.startsWith("'") && u.endsWith("'")) || (u.startsWith('"') && u.endsWith('"'))) {
+  //     u = u.slice(1, -1);
+  //   }
+  //   // if protocol missing or malformed like 'http:/host', fix it
+  //   if (!/^https?:\/\//i.test(u)) {
+  //     // replace any leading protocol with proper double slash
+  //     u = u.replace(/^https?:\/+/, (m) => m.replace(/\/+$/, "") + "//");
+  //     if (!/^https?:\/\//i.test(u)) {
+  //       u = "http://" + u;
+  //     }
+  //   }
+  //   // remove trailing slashes
+  //   u = u.replace(/\/+$/g, "");
+  //   return u;
+  // };
 
   useEffect(() => {
     // Fetch agreement text from backend
+    const randomFunction = () => {
+      console.log(scrolledToBottom);
+    }
+    randomFunction();
     if (!orderId) return;
     
     setIsLoading(true);
