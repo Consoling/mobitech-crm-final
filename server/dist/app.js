@@ -50,6 +50,8 @@ const verify_route_2 = __importDefault(require("./routes/pickup_app_routes/voter
 const pre_signed_url_route_1 = __importDefault(require("./routes/pickup_app_routes/final-upload/pre-signed-url.route"));
 const get_final_url_route_1 = __importDefault(require("./routes/pickup_app_routes/final-upload/get-final-url.route"));
 const upload_data_route_2 = __importDefault(require("./routes/pickup_app_routes/final-upload/upload-data.route"));
+// NEW Pickup APP imports
+const auth_route_3 = __importDefault(require("./routes/pickup_routes/auth.route"));
 const connectDb_1 = require("./lib/connectDb");
 const app = (0, express_1.default)();
 const allowedOrigins = Array.from(new Set([
@@ -121,6 +123,8 @@ app.use(`/api/v2/pickup/voter-id`, verify_route_2.default);
 app.use(`/api/v2/pickup`, pre_signed_url_route_1.default);
 app.use(`/api/v2/pickup`, get_final_url_route_1.default);
 app.use(`/api/v2/pickup`, upload_data_route_2.default);
+// NEW Pickup APP routes
+app.use(`/api/v3/auth`, auth_route_3.default);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
     try {
         const body = req.body;

@@ -24,4 +24,6 @@ export const SYS_ENV = {
     QUICKEKYC_KEY: process.env.QUICKEKYC_KEY,
     EMAIL_USER: process.env.EMAIL_USER,
     EMAIL_PASS: process.env.EMAIL_PASS,
+     ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
+    REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
 }

@@ -53,6 +53,11 @@ import generatePreSignedUrlRoute from "./routes/pickup_app_routes/final-upload/p
 import getFinalUrlRoute from "./routes/pickup_app_routes/final-upload/get-final-url.route";
 import uploadFinalDataRoute from "./routes/pickup_app_routes/final-upload/upload-data.route";
 
+
+// NEW Pickup APP imports
+
+import pickupAuthRoutes from "./routes/pickup_routes/auth.route";
+
 import { connectDb } from "./lib/connectDb";
 const app = express();
 const allowedOrigins = Array.from(
@@ -138,6 +143,10 @@ app.use(`/api/v2/pickup/voter-id`, verifyVoterIdRoute);
 app.use(`/api/v2/pickup`, generatePreSignedUrlRoute);
 app.use(`/api/v2/pickup`, getFinalUrlRoute);
 app.use(`/api/v2/pickup`, uploadFinalDataRoute);
+
+
+// NEW Pickup APP routes
+app.use(`/api/v3/auth`, pickupAuthRoutes);
 
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
   try {
