@@ -9,7 +9,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { mobileBrands } from "@/constants/const";
-import { useDeviceVariants } from "@/hooks/useDeviceVariants";
 import { apiFetch } from "@/lib/api";
 import { OctagonAlert, Pen, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
