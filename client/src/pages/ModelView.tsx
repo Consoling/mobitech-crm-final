@@ -491,11 +491,3 @@ const ModelView = () => {
 
 export default ModelView;
 
-const VariantCardData = () => {
-  const { data: variants = [], isLoading, isError } = useDeviceVariants();
-  const [open, setOpen] = useState(false);
-  if (isError) {
-    return <div className="text-red-500 text-sm">Failed to load variants.</div>;
-  }
-  return <></>;
-};
