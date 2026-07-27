@@ -7,7 +7,7 @@ import { SYS_ENV } from "../../../utils/env";
 
 const router = express.Router();
 
-const s3 = new S3Client({
+export const s3 = new S3Client({
   region: "ap-south-1",
   credentials: {
     accessKeyId:

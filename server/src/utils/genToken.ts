@@ -4,7 +4,7 @@ import crypto from "crypto";
 
 export const generateAccessToken = (payload: any) => {
     const accessToken = jwt.sign(payload, SYS_ENV.ACCESS_TOKEN_SECRET!, {
-        expiresIn: "15s"
+        expiresIn: "15m"
     })
     return accessToken;
 }

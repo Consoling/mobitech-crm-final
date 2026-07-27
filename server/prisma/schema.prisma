@@ -30,7 +30,7 @@ model User {
   qualificationImage String?
   VehicleFrontImage  String?
   VehicleBackImage   String?
-  contractDocument     String?
+  contractDocument   String?
   role               Role?
   storeId            String?
   createdBy          String?
@@ -52,7 +52,7 @@ model User {
   DoorstepPickups    DoorstepPickup[]
   DiagnosticsData    DiagnosticsData[]
 
-  pickupSessions     PickupAppSession[]
+  pickupSessions PickupAppSession[]
 
   @@index([createdAt])
   @@index([status])
@@ -425,9 +425,14 @@ model Declaration {
   modelName         String?
 }
 
+
+
 model DoorstepPickup {
-  id                      String   @id @default(cuid())
-  orderId                 String   @unique
+  id                      String    @id @default(cuid())
+  orderId                 String    @unique
+  currentStep             Int       @default(1)
+  deviceType              String?
+  brand                   String?
   variant                 String?
   imei1                   String?
   imei2                   String?
@@ -493,12 +498,25 @@ model DoorstepPickup {
   repairParts             Json?
   repairDate              String?
   assignedBC              String?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
   customerDeclaration     Boolean?
   purchaseAmount          String?
   employeeId              String?
-  user                    User?    @relation(fields: [employeeId], references: [id])
+  expiresAt               DateTime?
+
+  stage                   Stage
+  user                    User?     @relation(fields: [employeeId], references: [id])
+  
+  selectedDSTPModel       Json?
+}
+
+enum Stage {
+  IN_PROGRESS
+  PENDING
+  COMPLETED
+  CANCELLED
+  EXPIRED
 }
 
 // New
@@ -558,77 +576,75 @@ enum Role {
   STORE_OWNER
 }
 
-
-
 model Customers {
-  id            String   @id @default(cuid())
-  firstName     String
-  lastName      String?
-  phone         String   @unique
-  email         String?  @unique
-  address       Json?
-  purchases     Purchases[]         
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String      @id @default(cuid())
+  firstName String
+  lastName  String?
+  phone     String      @unique
+  email     String?     @unique
+  address   Json?
+  purchases Purchases[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
+
 model Parties {
-  id            String   @id @default(cuid())
-  firstName     String
-  lastName      String?
-  phone         String   @unique
-  email         String?  @unique
-  address       Json?
-  bankDetails   Json?
-  purchases     PartyPurchases[]         
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String           @id @default(cuid())
+  firstName   String
+  lastName    String?
+  phone       String           @unique
+  email       String?          @unique
+  address     Json?
+  bankDetails Json?
+  purchases   PartyPurchases[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
 
 model Purchases {
-  id            String   @id @default(cuid())
-  customerId    String
-  model         String
-  imei          String   @unique
-  purchaseDate  DateTime
-  price         Decimal
-  // bankDetails    Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  customer      Customers @relation(fields: [customerId], references: [id], onDelete: Cascade)
-}
-
-model PartyPurchases {
-  id            String   @id @default(cuid())
-  partyId       String
-  model         String
-  imei          String   @unique
-  purchaseDate  DateTime
-  price         Decimal
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  party         Parties   @relation(fields: [partyId], references: [id], onDelete: Cascade)
-}
-
-
-model PickupAppSession {
   id           String   @id @default(cuid())
-  sessionId    String   @unique @default(uuid())
-  userId       String
-  refreshTokenHash String 
-  
-  deviceName       String?
-  userAgent        String?
-  ipAddress        String?
-
-  revoked      Boolean  @default(false)
-  lastUsedAt   DateTime @default(now())
-  expiresAt    DateTime
+  customerId   String
+  model        String
+  imei         String   @unique
+  purchaseDate DateTime
+  price        Decimal
+  // bankDetails    Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer Customers @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model PartyPurchases {
+  id           String   @id @default(cuid())
+  partyId      String
+  model        String
+  imei         String   @unique
+  purchaseDate DateTime
+  price        Decimal
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  party Parties @relation(fields: [partyId], references: [id], onDelete: Cascade)
+}
+
+model PickupAppSession {
+  id               String @id @default(cuid())
+  sessionId        String @unique @default(uuid())
+  userId           String
+  refreshTokenHash String
+
+  deviceName String?
+  userAgent  String?
+  ipAddress  String?
+
+  revoked    Boolean  @default(false)
+  lastUsedAt DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])

@@ -14,6 +14,7 @@ import modelsRoutes from "./routes/models.route";
 import qcReportRoutes from "./routes/qcreport.route";
 import ocrRoutes from "./routes/ocr.route";
 import deviceDataRoute from "./routes/device-data.route";
+import utilRoutes from "./routes/util.routes";
 import diagnoseAuthRoutes from "./routes/diagnose_routes/auth.route";
 import mfaDiagnoseRoutes from "./routes/diagnose_routes/mfa.route";
 import verifySelfieRoutes from "./routes/diagnose_routes/verify-selfie.route";
@@ -51,12 +52,14 @@ import verifyVoterIdRoute from "./routes/pickup_app_routes/voter-id/verify.route
 
 import generatePreSignedUrlRoute from "./routes/pickup_app_routes/final-upload/pre-signed-url.route";
 import getFinalUrlRoute from "./routes/pickup_app_routes/final-upload/get-final-url.route";
-import uploadFinalDataRoute from "./routes/pickup_app_routes/final-upload/upload-data.route";
+// import uploadFinalDataRoute from "./routes/pickup_app_routes/final-upload/upload-data.route";
 
 
 // NEW Pickup APP imports
 
 import pickupAuthRoutes from "./routes/pickup_routes/auth.route";
+import modelDataRoutes from "./routes/pickup_routes/business/modeldata.route";
+import doorstepRoutes from "./routes/pickup_routes/business/doorstep-pickup.routes";
 
 import { connectDb } from "./lib/connectDb";
 const app = express();
@@ -107,6 +110,7 @@ app.use("/api/v2/ocr", ocrRoutes);
 app.use("/api/v1/customers", customerRoutes);
 app.use("/api/v1/parties", partiesRoutes);
 app.use("/api/v2/device-data", deviceDataRoute);
+app.use("/api/v1/util", utilRoutes);
 
 app.use(`/api/v1/diagnose`, diagnoseAuthRoutes);
 app.use(`/api/v1/diagnose`, mfaDiagnoseRoutes);
@@ -142,12 +146,14 @@ app.use(`/api/v2/pickup/voter-id`, verifyVoterIdRoute);
 
 app.use(`/api/v2/pickup`, generatePreSignedUrlRoute);
 app.use(`/api/v2/pickup`, getFinalUrlRoute);
-app.use(`/api/v2/pickup`, uploadFinalDataRoute);
+// app.use(`/api/v2/pickup`, uploadFinalDataRoute);
 
 
 // NEW Pickup APP routes
 app.use(`/api/v3/auth`, pickupAuthRoutes);
+app.use(`/api/v3/model-data`, modelDataRoutes);
 
+app.use(`/api/v3/doorstep-pickup`, doorstepRoutes);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
   try {
     const body = req.body;

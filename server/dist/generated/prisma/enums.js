@@ -9,7 +9,14 @@
 * 🟢 You can import this file directly.
 */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Role = exports.UserStatus = void 0;
+exports.Role = exports.UserStatus = exports.Stage = void 0;
+exports.Stage = {
+    IN_PROGRESS: 'IN_PROGRESS',
+    PENDING: 'PENDING',
+    COMPLETED: 'COMPLETED',
+    CANCELLED: 'CANCELLED',
+    EXPIRED: 'EXPIRED'
+};
 exports.UserStatus = {
     ACTIVE: 'ACTIVE',
     INACTIVE: 'INACTIVE',

@@ -33,43 +33,22 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authenticate = void 0;
-const jsonwebtoken_1 = __importStar(require("jsonwebtoken"));
-const env_1 = require("../utils/env");
-const authenticate = (req, res, next) => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith("Bearer ")) {
-            return res.status(401).json({
-                success: false,
-                message: "Unauthorized",
-            });
-        }
-        const token = authHeader.split(" ")[1];
-        const decoded = jsonwebtoken_1.default.verify(token, env_1.SYS_ENV.ACCESS_TOKEN_SECRET);
-        if (decoded.type !== "ACCESS") {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid token type",
-            });
-        }
-        req.user = {
-            userId: decoded.sub,
-            role: decoded.role,
-        };
-        next();
-    }
-    catch (error) {
-        if (error instanceof jsonwebtoken_1.TokenExpiredError) {
-            return res.status(401).json({
-                success: false,
-                message: "Access token expired",
-            });
-        }
-        return res.status(401).json({
-            success: false,
-            message: "Invalid access token",
-        });
-    }
-};
-exports.authenticate = authenticate;
+const mongoose_1 = __importStar(require("mongoose"));
+const DeviceVariantSchema = new mongoose_1.Schema({
+    variant: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+    },
+}, {
+    timestamps: true,
+});
+// Optional: index for faster lookups
+DeviceVariantSchema.index({ variant: 1 });
+exports.default = mongoose_1.default.model("DeviceVariant", DeviceVariantSchema, "DeviceVariant" // Uses your existing collection name exactly
+);

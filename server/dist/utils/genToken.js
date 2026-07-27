@@ -9,7 +9,7 @@ const env_js_1 = require("./env.js");
 const crypto_1 = __importDefault(require("crypto"));
 const generateAccessToken = (payload) => {
     const accessToken = jsonwebtoken_1.default.sign(payload, env_js_1.SYS_ENV.ACCESS_TOKEN_SECRET, {
-        expiresIn: "15s"
+        expiresIn: "15m"
     });
     return accessToken;
 };

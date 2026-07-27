@@ -18,6 +18,7 @@ const models_route_1 = __importDefault(require("./routes/models.route"));
 const qcreport_route_1 = __importDefault(require("./routes/qcreport.route"));
 const ocr_route_1 = __importDefault(require("./routes/ocr.route"));
 const device_data_route_1 = __importDefault(require("./routes/device-data.route"));
+const util_routes_1 = __importDefault(require("./routes/util.routes"));
 const auth_route_2 = __importDefault(require("./routes/diagnose_routes/auth.route"));
 const mfa_route_2 = __importDefault(require("./routes/diagnose_routes/mfa.route"));
 const verify_selfie_route_1 = __importDefault(require("./routes/diagnose_routes/verify-selfie.route"));
@@ -49,9 +50,11 @@ const verify_otp_route_2 = __importDefault(require("./routes/pickup_app_routes/a
 const verify_route_2 = __importDefault(require("./routes/pickup_app_routes/voter-id/verify.route"));
 const pre_signed_url_route_1 = __importDefault(require("./routes/pickup_app_routes/final-upload/pre-signed-url.route"));
 const get_final_url_route_1 = __importDefault(require("./routes/pickup_app_routes/final-upload/get-final-url.route"));
-const upload_data_route_2 = __importDefault(require("./routes/pickup_app_routes/final-upload/upload-data.route"));
+// import uploadFinalDataRoute from "./routes/pickup_app_routes/final-upload/upload-data.route";
 // NEW Pickup APP imports
 const auth_route_3 = __importDefault(require("./routes/pickup_routes/auth.route"));
+const modeldata_route_1 = __importDefault(require("./routes/pickup_routes/business/modeldata.route"));
+const doorstep_pickup_routes_1 = __importDefault(require("./routes/pickup_routes/business/doorstep-pickup.routes"));
 const connectDb_1 = require("./lib/connectDb");
 const app = (0, express_1.default)();
 const allowedOrigins = Array.from(new Set([
@@ -94,6 +97,7 @@ app.use("/api/v2/ocr", ocr_route_1.default);
 app.use("/api/v1/customers", customer_route_1.default);
 app.use("/api/v1/parties", parties_route_1.default);
 app.use("/api/v2/device-data", device_data_route_1.default);
+app.use("/api/v1/util", util_routes_1.default);
 app.use(`/api/v1/diagnose`, auth_route_2.default);
 app.use(`/api/v1/diagnose`, mfa_route_2.default);
 app.use(`/api/v1/diagnose`, verify_selfie_route_1.default);
@@ -122,9 +126,11 @@ app.use(`/api/v2/pickup/aadhar`, verify_otp_route_2.default);
 app.use(`/api/v2/pickup/voter-id`, verify_route_2.default);
 app.use(`/api/v2/pickup`, pre_signed_url_route_1.default);
 app.use(`/api/v2/pickup`, get_final_url_route_1.default);
-app.use(`/api/v2/pickup`, upload_data_route_2.default);
+// app.use(`/api/v2/pickup`, uploadFinalDataRoute);
 // NEW Pickup APP routes
 app.use(`/api/v3/auth`, auth_route_3.default);
+app.use(`/api/v3/model-data`, modeldata_route_1.default);
+app.use(`/api/v3/doorstep-pickup`, doorstep_pickup_routes_1.default);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
     try {
         const body = req.body;

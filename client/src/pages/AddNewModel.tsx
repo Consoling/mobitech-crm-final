@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+  Command,
+  CommandDialog,
+} from "@/components/ui/command";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -17,7 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { COMMON_VARIANTS, mobileBrands } from "@/constants/const";
 import { Plus, Trash2, UploadCloud, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -26,22 +29,32 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { z } from "zod";
 import { apiJson, jsonHeaders } from "@/lib/api";
+import { SelectVariantSection } from "@/components/SelectVariantSection";
+import { mobileBrands } from "@/constants/const";
+import { useAddDeviceVariant } from "@/hooks/useDeviceVariants";
 
 // Zod Schema for form validation
 const formSchema = z.object({
   category: z.string().min(1, "Category is required"),
-  productImage: z.string().url("Invalid image URL").min(1, "Product image is required"),
+  productImage: z
+    .string()
+    .url("Invalid image URL")
+    .min(1, "Product image is required"),
   modelName: z.string().min(1, "Model name is required"),
-  variants: z.record(
-    z.string(),
-    z.object({
-      variant: z.string().min(1, "Variant name is required"),
-      price: z.string().min(1, "Price is required"),
-    })
-  ).refine((variants) => Object.keys(variants).length > 0, {
-    message: "At least one variant is required",
-  }),
-  modelCodes: z.array(z.string().min(1)).min(1, "At least one model code is required"),
+  variants: z
+    .record(
+      z.string(),
+      z.object({
+        variant: z.string().min(1, "Variant name is required"),
+        price: z.string().min(1, "Price is required"),
+      }),
+    )
+    .refine((variants) => Object.keys(variants).length > 0, {
+      message: "At least one variant is required",
+    }),
+  modelCodes: z
+    .array(z.string().min(1))
+    .min(1, "At least one model code is required"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -78,6 +91,9 @@ const AddNewModel = () => {
   const [newVariantName, setNewVariantName] = useState("");
   const [newVariantPrice, setNewVariantPrice] = useState("");
   const [newModelCode, setNewModelCode] = useState("");
+
+  const [openAddCustomVariantDialog, setOpenAddCustomVariantDialog] =
+    useState(false);
 
   // Watch form values
   const productImage = watch("productImage");
@@ -126,7 +142,7 @@ const AddNewModel = () => {
             price: newVariantPrice,
           },
         },
-        { shouldValidate: true }
+        { shouldValidate: true },
       );
       setNewVariantName("");
       setNewVariantPrice("");
@@ -134,17 +150,24 @@ const AddNewModel = () => {
     }
   };
 
+  
+
   const handleRemoveVariant = (index: string) => {
     const currentVariants = variants || {};
     const newVariants = { ...currentVariants };
     delete newVariants[index];
-    
+
     // Reindex variants
-    const reindexedVariants: Record<string, { variant: string; price: string }> = {};
-    Object.values(newVariants).forEach((variant: { variant: string; price: string }, idx: number) => {
-      reindexedVariants[idx] = variant;
-    });
-    
+    const reindexedVariants: Record<
+      string,
+      { variant: string; price: string }
+    > = {};
+    Object.values(newVariants).forEach(
+      (variant: { variant: string; price: string }, idx: number) => {
+        reindexedVariants[idx] = variant;
+      },
+    );
+
     setValue("variants", reindexedVariants, { shouldValidate: true });
     toast.success("Variant removed");
   };
@@ -170,7 +193,7 @@ const AddNewModel = () => {
     setValue(
       "modelCodes",
       currentCodes.filter((c: string) => c !== code),
-      { shouldValidate: true }
+      { shouldValidate: true },
     );
     toast.success("Model code removed");
   };
@@ -209,7 +232,7 @@ const AddNewModel = () => {
       }
 
       toast.success(result?.message || "Model added successfully!");
-      
+
       // Navigate back to the brand models page after a short delay
       setTimeout(() => {
         navigate(`/model/${urlParams.brandId}`);
@@ -226,7 +249,10 @@ const AddNewModel = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto max-[600px]:px-4 px-10">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="mx-auto max-[600px]:px-4 px-10"
+    >
       {/* Image Upload Dialog */}
       <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
         <DialogContent>
@@ -242,7 +268,9 @@ const AddNewModel = () => {
               onChange={(e) => setCurrentImageUrl(e.target.value)}
               placeholder="https://example.com/image.jpg"
               className="w-full"
-              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddImage())}
+              onKeyPress={(e) =>
+                e.key === "Enter" && (e.preventDefault(), handleAddImage())
+              }
             />
           </div>
           <DialogFooter>
@@ -282,7 +310,12 @@ const AddNewModel = () => {
       {/* Layer 2 - Category */}
       <Card className="px-5 mt-4 w-full rounded-[16px] border border-[#E2E8F0] py-4">
         <h2 className="text-base font-bold">Category</h2>
-        <Select value={category} onValueChange={(value) => setValue("category", value, { shouldValidate: true })}>
+        <Select
+          value={category}
+          onValueChange={(value) =>
+            setValue("category", value, { shouldValidate: true })
+          }
+        >
           <SelectTrigger className="w-full -mt-2.5 mb-1">
             <SelectValue placeholder="e.g. Phone, Laptop and tablet" />
           </SelectTrigger>
@@ -325,7 +358,8 @@ const AddNewModel = () => {
                 alt="Product"
                 className="w-full h-full object-contain rounded-[16px]"
                 onError={(e) => {
-                  e.currentTarget.src = "https://via.placeholder.com/256x320?text=Invalid+Image";
+                  e.currentTarget.src =
+                    "https://via.placeholder.com/256x320?text=Invalid+Image";
                 }}
               />
             </Card>
@@ -346,7 +380,9 @@ const AddNewModel = () => {
           )}
         </div>
         {errors.productImage && (
-          <p className="text-red-500 text-sm mt-2">{errors.productImage.message}</p>
+          <p className="text-red-500 text-sm mt-2">
+            {errors.productImage.message}
+          </p>
         )}
       </Card>
 
@@ -363,7 +399,9 @@ const AddNewModel = () => {
             placeholder="e.g. iPhone 14 Pro Max"
           />
           {errors.modelName && (
-            <p className="text-red-500 text-sm mt-1">{errors.modelName.message}</p>
+            <p className="text-red-500 text-sm mt-1">
+              {errors.modelName.message}
+            </p>
           )}
         </div>
       </Card>
@@ -374,52 +412,22 @@ const AddNewModel = () => {
           <h2 className="text-base font-bold">
             Variants ({Object.keys(variants || {}).length})
           </h2>
+
+          <AddCustomVariantDialog
+            open={openAddCustomVariantDialog}
+            onOpenChange={setOpenAddCustomVariantDialog}
+            // onAddVariant={handleAddCustomVariant}
+          />
         </div>
 
         {/* New Variants Addition */}
-        <div className="mt-4">
-          <span className="text-[#314158] text-sm">Add New Variants</span>
-          <div className="flex gap-2 mt-1.5">
-            <Select
-              value={newVariantName}
-              onValueChange={setNewVariantName}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Select variant" />
-              </SelectTrigger>
-              <SelectContent>
-                {COMMON_VARIANTS.map((variant) => (
-                  <SelectItem key={variant} value={variant}>
-                    {variant}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom">Custom variant...</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Show custom input if "custom" is selected */}
-            {newVariantName === "custom" && (
-              <Input
-                value=""
-                onChange={(e) => setNewVariantName(e.target.value)}
-                placeholder="Enter custom variant"
-                className="flex-1"
-                autoFocus
-              />
-            )}
-
-            <Input
-              value={newVariantPrice}
-              onChange={(e) => setNewVariantPrice(e.target.value)}
-              placeholder="e.g., ₹23,999 or 0"
-              className="flex-1"
-              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddVariant())}
-            />
-            <Button type="button" onClick={handleAddVariant} size="sm">
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        <SelectVariantSection
+          handleAddVariant={handleAddVariant}
+          newVariantName={newVariantName}
+          newVariantPrice={newVariantPrice}
+          setNewVariantName={setNewVariantName}
+          setNewVariantPrice={setNewVariantPrice}
+        />
 
         {/* Existing Variants List */}
         {variants && Object.keys(variants).length > 0 && (
@@ -428,29 +436,37 @@ const AddNewModel = () => {
               Existing Variants
             </span>
             <div className="space-y-2 mt-2">
-              {Object.entries(variants).map(([key, variant]: [string, { variant: string; price: string }]) => (
-                <div key={key} className="flex gap-2 items-center">
-                  <Input
-                    value={variant.variant}
-                    className="flex-1 h-[46px] font-inter text-[13px] text-[#0F172BA3] font-medium bg-gray-50"
-                    readOnly
-                  />
-                  <Input
-                    value={variant.price === "0" ? "₹0" : variant.price}
-                    className="flex-1 h-[46px] font-inter text-[13px] text-[#0F172BA3] font-medium bg-gray-50"
-                    readOnly
-                  />
-                  <Trash2
-                    className="w-4 h-4 text-red-400 cursor-pointer hover:text-red-600"
-                    onClick={() => handleRemoveVariant(key)}
-                  />
-                </div>
-              ))}
+              {Object.entries(variants).map(
+                ([key, variant]: [
+                  string,
+                  { variant: string; price: string },
+                ]) => (
+                  <div key={key} className="flex gap-2 items-center">
+                    <Input
+                      value={variant.variant}
+                      className="flex-1 h-[46px] font-inter text-[13px] text-[#0F172BA3] font-medium bg-gray-50"
+                      readOnly
+                    />
+                    <Input
+                      value={variant.price === "0" ? "₹0" : variant.price}
+                      className="flex-1 h-[46px] font-inter text-[13px] text-[#0F172BA3] font-medium bg-gray-50"
+                      readOnly
+                    />
+                    <Trash2
+                      className="w-4 h-4 text-red-400 cursor-pointer hover:text-red-600"
+                      onClick={() => handleRemoveVariant(key)}
+                    />
+                  </div>
+                ),
+              )}
             </div>
           </div>
         )}
         {errors.variants && (
-          <p className="text-red-500 text-sm mt-2">{errors.variants.root?.message || "At least one variant is required"}</p>
+          <p className="text-red-500 text-sm mt-2">
+            {errors.variants.root?.message ||
+              "At least one variant is required"}
+          </p>
         )}
       </Card>
 
@@ -470,7 +486,9 @@ const AddNewModel = () => {
               value={newModelCode}
               onChange={(e) => setNewModelCode(e.target.value)}
               placeholder="Add new model code..."
-              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddModelCode())}
+              onKeyPress={(e) =>
+                e.key === "Enter" && (e.preventDefault(), handleAddModelCode())
+              }
               className="flex-1"
             />
             <Button type="button" onClick={handleAddModelCode} size="sm">
@@ -503,7 +521,9 @@ const AddNewModel = () => {
           </div>
         </div>
         {errors.modelCodes && (
-          <p className="text-red-500 text-sm mt-2">{errors.modelCodes.message}</p>
+          <p className="text-red-500 text-sm mt-2">
+            {errors.modelCodes.message}
+          </p>
         )}
       </Card>
 
@@ -535,8 +555,6 @@ const AddNewModel = () => {
 
 export default AddNewModel;
 
-
-
 // {
 //     "category": "phone",
 //     "productImages": [
@@ -554,3 +572,83 @@ export default AddNewModel;
 //         "V2057"
 //     ]
 // }
+
+
+
+export const AddCustomVariantDialog = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const [ram, setRam] = useState("");
+  const [rom, setRom] = useState("");
+
+  const addVariantMutation = useAddDeviceVariant();
+
+  const handleSubmit = async () => {
+    if (!ram.trim() || !rom.trim()) return;
+
+    await addVariantMutation.mutateAsync({
+      variant: `${ram.trim()} GB/${rom.trim()} GB`,
+      isActive: true,
+    });
+
+    setRam("");
+    setRom("");
+    onOpenChange(false);
+  };
+
+  return (
+    <>
+      <Button
+        type="button"
+        onClick={() => onOpenChange(true)}
+        size="sm"
+        variant="custom-one"
+      >
+        Add Custom Variant
+        <Plus className="ml-2 h-4 w-4" />
+      </Button>
+
+      <CommandDialog open={open} onOpenChange={onOpenChange}>
+        <Command shouldFilter={false}>
+          <div className="space-y-4 p-4">
+
+            <div className="mt-4 mb-3">
+              <span className="text-[#314158] text-sm">Add Custom Variant</span>
+            </div>
+            <Input
+              type="number"
+              placeholder="RAM (GB)"
+              value={ram}
+              onChange={(e) => setRam(e.target.value)}
+            />
+
+            <Input
+              type="number"
+              placeholder="Storage (GB)"
+              value={rom}
+              onChange={(e) => setRom(e.target.value)}
+            />
+
+            <Button
+              className="w-full"
+              onClick={handleSubmit}
+              disabled={
+                addVariantMutation.isPending ||
+                !ram.trim() ||
+                !rom.trim()
+              }
+            >
+              {addVariantMutation.isPending
+                ? "Adding..."
+                : `Add ${ram || "?"} GB/${rom || "?"} GB`}
+            </Button>
+          </div>
+        </Command>
+      </CommandDialog>
+    </>
+  );
+};

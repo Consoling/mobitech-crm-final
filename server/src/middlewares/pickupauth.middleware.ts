@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { TokenExpiredError } from "jsonwebtoken";
 import { SYS_ENV } from "../utils/env";
+
 export interface AuthRequest extends Request {
   user?: {
     userId: string;
@@ -16,7 +17,7 @@ export const authenticate = (
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
@@ -24,27 +25,40 @@ export const authenticate = (
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, SYS_ENV.ACCESS_TOKEN_SECRET!) as {
+
+    const decoded = jwt.verify(
+      token,
+      SYS_ENV.ACCESS_TOKEN_SECRET!,
+    ) as {
       sub: string;
       role: string;
+      type: string;
     };
+
+    if (decoded.type !== "ACCESS") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token type",
+      });
+    }
+
     req.user = {
       userId: decoded.sub,
       role: decoded.role,
     };
 
-    return next();
+    next();
   } catch (error) {
- if (error instanceof TokenExpiredError) {
+    if (error instanceof TokenExpiredError) {
+      return res.status(401).json({
+        success: false,
+        message: "Access token expired",
+      });
+    }
+
     return res.status(401).json({
       success: false,
-      message: "Access token expired",
+      message: "Invalid access token",
     });
-  }
-
-  return res.status(401).json({
-    success: false,
-    message: "Invalid access token",
-  });
   }
 };

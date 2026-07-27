@@ -35,7 +35,7 @@ const getImagePayload = async (key: string | null) => {
     return null;
   }
 
-  console.log("Getting image payload for key:", key);
+  // console.log("Getting image payload for key:", key);
 
   // Fall back to presigned S3 URL if CDN not configured
   if (s3Client && S3_BUCKET_NAME) {
@@ -285,15 +285,22 @@ router.post(`/login/verify`, async (req: Request, res: Response) => {
       user.admin?.lastName ??
       user.salesExecutive?.lastName ??
       "";
-
+let img = await getImagePayload(user.profileImage);
     let dataToSend: any = {
       user: {
-        id: user.id,
+        employeeDbId: user.id,
         firstName,
         lastName,
         email: user.email,
         role: user.role,
-        profileImage: await getImagePayload(user.profileImage),
+        profileImage: img ? img?.url : null,
+        employeeId:
+          user.manager?.employeeId ??
+          user.technician?.employeeId ??
+          user.fieldExecutive?.employeeId ??
+          user.admin?.employeeId ??
+          user.salesExecutive?.employeeId ??
+          null,
       },
     };
 
@@ -392,17 +399,24 @@ router.get(`/me`, authenticate, async (req: AuthRequest, res: Response) => {
       user.admin?.lastName ??
       user.salesExecutive?.lastName ??
       "";
-let img = await getImagePayload(user.profileImage)
+    let img = await getImagePayload(user.profileImage);
 
-// console.log("User profile image payload:", img);
+    // console.log("User profile image payload:", img);
     let dataToSend: any = {
       user: {
-        id: user.id,
+          employeeDbId: user.id,
         firstName,
         lastName,
         email: user.email,
         role: user.role,
-        profileImage: img,
+        profileImage: img ? img?.url : null,
+        employeeId:
+          user.manager?.employeeId ??
+          user.technician?.employeeId ??
+          user.fieldExecutive?.employeeId ??
+          user.admin?.employeeId ??
+          user.salesExecutive?.employeeId ??
+          null,
       },
     };
 

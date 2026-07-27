@@ -3,13 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.s3 = void 0;
 const express_1 = __importDefault(require("express"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const crypto_1 = require("crypto");
 const env_1 = require("../../../utils/env");
 const router = express_1.default.Router();
-const s3 = new client_s3_1.S3Client({
+exports.s3 = new client_s3_1.S3Client({
     region: "ap-south-1",
     credentials: {
         accessKeyId: env_1.SYS_ENV.AWS_ACCESS_KEY ||
@@ -30,7 +31,7 @@ router.post("/get-presigned-url", async (req, res) => {
         }
         const urls = await Promise.all(files.map(async (file) => {
             const key = `temp/${Date.now()}-${(0, crypto_1.randomUUID)()}-${file.name}`;
-            const uploadUrl = await (0, s3_request_presigner_1.getSignedUrl)(s3, new client_s3_1.PutObjectCommand({
+            const uploadUrl = await (0, s3_request_presigner_1.getSignedUrl)(exports.s3, new client_s3_1.PutObjectCommand({
                 Bucket: env_1.SYS_ENV.AWS_S3_BUCKET_NAME,
                 Key: key,
                 ContentType: file.type,

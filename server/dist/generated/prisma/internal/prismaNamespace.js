@@ -453,6 +453,9 @@ exports.DeclarationScalarFieldEnum = {
 exports.DoorstepPickupScalarFieldEnum = {
     id: 'id',
     orderId: 'orderId',
+    currentStep: 'currentStep',
+    deviceType: 'deviceType',
+    brand: 'brand',
     variant: 'variant',
     imei1: 'imei1',
     imei2: 'imei2',
@@ -522,7 +525,10 @@ exports.DoorstepPickupScalarFieldEnum = {
     updatedAt: 'updatedAt',
     customerDeclaration: 'customerDeclaration',
     purchaseAmount: 'purchaseAmount',
-    employeeId: 'employeeId'
+    employeeId: 'employeeId',
+    expiresAt: 'expiresAt',
+    stage: 'stage',
+    selectedDSTPModel: 'selectedDSTPModel'
 };
 exports.DiagnosticsDataScalarFieldEnum = {
     id: 'id',

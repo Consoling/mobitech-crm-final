@@ -26,7 +26,7 @@ const getImagePayload = async (key) => {
     if (!key) {
         return null;
     }
-    console.log("Getting image payload for key:", key);
+    // console.log("Getting image payload for key:", key);
     // Fall back to presigned S3 URL if CDN not configured
     if (s3_1.s3Client && S3_BUCKET_NAME) {
         try {
@@ -240,14 +240,21 @@ router.post(`/login/verify`, async (req, res) => {
             user.admin?.lastName ??
             user.salesExecutive?.lastName ??
             "";
+        let img = await getImagePayload(user.profileImage);
         let dataToSend = {
             user: {
-                id: user.id,
+                employeeDbId: user.id,
                 firstName,
                 lastName,
                 email: user.email,
                 role: user.role,
-                profileImage: await getImagePayload(user.profileImage),
+                profileImage: img ? img?.url : null,
+                employeeId: user.manager?.employeeId ??
+                    user.technician?.employeeId ??
+                    user.fieldExecutive?.employeeId ??
+                    user.admin?.employeeId ??
+                    user.salesExecutive?.employeeId ??
+                    null,
             },
         };
         return res.status(200).json({
@@ -344,12 +351,18 @@ router.get(`/me`, pickupauth_middleware_1.authenticate, async (req, res) => {
         // console.log("User profile image payload:", img);
         let dataToSend = {
             user: {
-                id: user.id,
+                employeeDbId: user.id,
                 firstName,
                 lastName,
                 email: user.email,
                 role: user.role,
-                profileImage: img,
+                profileImage: img ? img?.url : null,
+                employeeId: user.manager?.employeeId ??
+                    user.technician?.employeeId ??
+                    user.fieldExecutive?.employeeId ??
+                    user.admin?.employeeId ??
+                    user.salesExecutive?.employeeId ??
+                    null,
             },
         };
         // console.log("Data to send in /me route:", dataToSend);

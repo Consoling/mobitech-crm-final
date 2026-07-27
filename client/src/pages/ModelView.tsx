@@ -1,19 +1,21 @@
+import { SelectVariantSection } from "@/components/SelectVariantSection";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
-  SelectContent,
-  SelectItem,
+  
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { COMMON_VARIANTS, mobileBrands } from "@/constants/const";
+import { mobileBrands } from "@/constants/const";
+import { useDeviceVariants } from "@/hooks/useDeviceVariants";
 import { apiFetch } from "@/lib/api";
 import { OctagonAlert, Pen, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useParams } from "react-router-dom";
+import { AddCustomVariantDialog } from "./AddNewModel";
 
 interface FetchedMetadata {
   brandName: string;
@@ -37,6 +39,8 @@ const ModelView = () => {
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState("");
+    const [openAddCustomVariantDialog, setOpenAddCustomVariantDialog] =
+    useState(false);
   const urlParams = useParams();
 
   const addVariant = () => {
@@ -45,7 +49,8 @@ const ModelView = () => {
       return;
     }
 
-    const currentVariants = editedModelData?.detailedSpecifications?.variants || [];
+    const currentVariants =
+      editedModelData?.detailedSpecifications?.variants || [];
     const updatedVariants = [
       ...currentVariants,
       {
@@ -68,9 +73,10 @@ const ModelView = () => {
   };
 
   const removeVariant = (variantId: string) => {
-    const currentVariants = editedModelData?.detailedSpecifications?.variants || [];
+    const currentVariants =
+      editedModelData?.detailedSpecifications?.variants || [];
     const updatedVariants = currentVariants.filter(
-      (variant: any) => variant._id !== variantId
+      (variant: any) => variant._id !== variantId,
     );
 
     setEditedModelData({
@@ -84,8 +90,8 @@ const ModelView = () => {
     toast.success("Variant removed (unsaved)");
   };
 
-
   const updateBasicInfo = (field: string, value: string) => {
+
     setEditedModelData({
       ...editedModelData,
       detailedSpecifications: {
@@ -94,6 +100,7 @@ const ModelView = () => {
       },
     });
     setHasChanges(true);
+    console.log(`Updated ${field} to ${value}`);
   };
 
   const toggleImageEdit = () => {
@@ -131,6 +138,10 @@ const ModelView = () => {
     toast.success("Image removed (unsaved)");
   };
 
+  const handleAddVariant = () => {
+    addVariant();
+  }
+
   const handleSave = async () => {
     if (!hasChanges) {
       toast.error("No changes to save");
@@ -140,14 +151,17 @@ const ModelView = () => {
     setIsSaving(true);
     try {
       // Clean up variants - remove temporary IDs for new variants
-      const cleanedVariants = editedModelData?.detailedSpecifications?.variants?.map((variant: any) => {
-        if (variant._id && variant._id.startsWith('temp-')) {
-          // Remove temporary ID, let MongoDB generate a real one
-          const { _id, ...rest } = variant;
-          return rest;
-        }
-        return variant;
-      });
+      const cleanedVariants =
+        editedModelData?.detailedSpecifications?.variants?.map(
+          (variant: any) => {
+            if (variant._id && variant._id.startsWith("temp-")) {
+              // Remove temporary ID, let MongoDB generate a real one
+              const { _id, ...rest } = variant;
+              return rest;
+            }
+            return variant;
+          },
+        );
 
       const response = await apiFetch(`/models/model/${modelData.smc}`, {
         method: "PUT",
@@ -186,7 +200,9 @@ const ModelView = () => {
 
   const handleCancel = () => {
     if (hasChanges) {
-      const confirm = window.confirm("You have unsaved changes. Are you sure you want to discard them?");
+      const confirm = window.confirm(
+        "You have unsaved changes. Are you sure you want to discard them?",
+      );
       if (!confirm) return;
     }
     setEditedModelData(modelData);
@@ -270,16 +286,16 @@ const ModelView = () => {
         </div>
       </div>
 
-          {/* Layer 2 */}
+      {/* Layer 2 */}
 
-          <Card className="px-5 mt-4 w-full rounded-[16px] border border-[#E2E8F0] py-4">
-            <h2 className="text-base font-bold ">Category</h2>
-            <Select>
-              <SelectTrigger className="w-full -mt-2.5 mb-1">
-                <SelectValue placeholder="Phone" className="" />
-              </SelectTrigger>
-            </Select>
-          </Card>
+      <Card className="px-5 mt-4 w-full rounded-[16px] border border-[#E2E8F0] py-4">
+        <h2 className="text-base font-bold ">Category</h2>
+        <Select>
+          <SelectTrigger className="w-full -mt-2.5 mb-1">
+            <SelectValue placeholder="Phone" className="" />
+          </SelectTrigger>
+        </Select>
+      </Card>
 
       {/* Layer 3 */}
 
@@ -288,7 +304,9 @@ const ModelView = () => {
           <h2 className="text-xl font-bold mb-4">Product Image</h2>
           <Button onClick={toggleImageEdit} className="w-[90px]">
             <Pen className="text-white" size={9} />{" "}
-            <span className="ml-0.5 text-sm">{isEditingImage ? "Editing" : "Edit"}</span>
+            <span className="ml-0.5 text-sm">
+              {isEditingImage ? "Editing" : "Edit"}
+            </span>
           </Button>
         </div>
 
@@ -331,7 +349,8 @@ const ModelView = () => {
                   </button>
                 )}
               </div>
-            ) : editedModelData?.images && Array.isArray(editedModelData.images) ? (
+            ) : editedModelData?.images &&
+              Array.isArray(editedModelData.images) ? (
               // If multiple images array exists, show all cards
               editedModelData.images.map((image: string, index: number) => (
                 <div
@@ -369,7 +388,9 @@ const ModelView = () => {
           <h2 className="text-base font-bold ">Basic Information</h2>
           <Button onClick={toggleBasicInfoEdit} className="w-[90px]">
             <Pen className="text-white" size={9} />{" "}
-            <span className="ml-0.5 text-sm">{isEditingBasicInfo ? "Editing" : "Edit"}</span>
+            <span className="ml-0.5 text-sm">
+              {isEditingBasicInfo ? "Editing" : "Edit"}
+            </span>
           </Button>
         </div>
         <div className="mt-1">
@@ -388,64 +409,28 @@ const ModelView = () => {
       <Card className="px-5 mt-4 w-full rounded-[16px] border border-[#E2E8F0] py-4">
         <div className="flex justify-between items-center mt-4">
           <h2 className="text-base font-bold ">
-            Variants ({editedModelData?.detailedSpecifications?.variants?.length ?? 0})
+            Variants (
+            {editedModelData?.detailedSpecifications?.variants?.length ?? 0})
           </h2>
+
+          <AddCustomVariantDialog
+          open={openAddCustomVariantDialog}
+          onOpenChange={setOpenAddCustomVariantDialog}
+        
+          />
         </div>
         {/* New Variants Addition */}
-        <div className="mt-4">
-          <span className="text-[#314158] text-sm ">Add New Variants</span>
-          <div className="flex gap-2 mt-1.5">
-            <Select
-              value={newVariant.name}
-              onValueChange={(value) =>
-                setNewVariant({ ...newVariant, name: value })
-              }
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Select variant" />
-              </SelectTrigger>
-              <SelectContent>
-                {COMMON_VARIANTS.map((variant) => (
-                  <SelectItem key={variant} value={variant}>
-                    {variant}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom">Custom variant...</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Show custom input if "custom" is selected */}
-            {newVariant.name === "custom" && (
-              <Input
-                value=""
-                onChange={(e) =>
-                  setNewVariant({
-                    ...newVariant,
-                    name: e.target.value,
-                  })
-                }
-                placeholder="Enter custom variant"
-                className="flex-1"
-                autoFocus
-              />
-            )}
-
-            <Input
-              value={newVariant.price}
-              onChange={(e) =>
-                setNewVariant({
-                  ...newVariant,
-                  price: e.target.value,
-                })
-              }
-              placeholder="e.g., ₹23,999 or 0"
-              className="flex-1"
-            />
-            <Button onClick={addVariant} size="sm">
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        <SelectVariantSection
+          handleAddVariant={handleAddVariant}
+          newVariantName={newVariant.name}
+          setNewVariantName={(value: string) =>
+            setNewVariant((prev) => ({ ...prev, name: value }))
+          }
+          newVariantPrice={newVariant.price}
+          setNewVariantPrice={(value: string) =>
+            setNewVariant((prev) => ({ ...prev, price: value }))
+          }
+        />
         {/* Existing Variants List */}
         {editedModelData?.detailedSpecifications?.variants &&
           editedModelData.detailedSpecifications.variants.length > 0 && (
@@ -479,12 +464,9 @@ const ModelView = () => {
             </div>
           )}
       </Card>
- 
-
-
 
       <div className="my-20 flex justify-end gap-4 rounded-[34px]">
-        <Button 
+        <Button
           onClick={handleCancel}
           className="py-3 px-6 w-[153px] h-[50px]"
           variant="outline"
@@ -492,10 +474,12 @@ const ModelView = () => {
         >
           Cancel
         </Button>
-        <Button 
+        <Button
           onClick={handleSave}
-          className="py-3 px-6 w-[153px] h-[50px]" 
-          style={{ background: 'linear-gradient(90deg, #155DFC 0%, #1447E6 100%)' }}
+          className="py-3 px-6 w-[153px] h-[50px]"
+          style={{
+            background: "linear-gradient(90deg, #155DFC 0%, #1447E6 100%)",
+          }}
           disabled={!hasChanges || isSaving}
         >
           {isSaving ? "Saving..." : "Save Model"}
@@ -506,3 +490,12 @@ const ModelView = () => {
 };
 
 export default ModelView;
+
+const VariantCardData = () => {
+  const { data: variants = [], isLoading, isError } = useDeviceVariants();
+  const [open, setOpen] = useState(false);
+  if (isError) {
+    return <div className="text-red-500 text-sm">Failed to load variants.</div>;
+  }
+  return <></>;
+};
