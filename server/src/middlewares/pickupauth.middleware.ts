@@ -1,6 +1,7 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import jwt, { TokenExpiredError } from "jsonwebtoken";
 import { SYS_ENV } from "../utils/env";
+
 
 export interface AuthRequest extends Request {
   user?: {
@@ -20,7 +21,8 @@ export const authenticate = (
     if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized",
+        message: "Unauthorized - Missing or malformed token",
+        code: "UNAUTHORIZED",
       });
     }
 
@@ -39,6 +41,7 @@ export const authenticate = (
       return res.status(401).json({
         success: false,
         message: "Invalid token type",
+        code: "INVALID_TOKEN_TYPE",
       });
     }
 
@@ -47,18 +50,20 @@ export const authenticate = (
       role: decoded.role,
     };
 
-    next();
-  } catch (error) {
-    if (error instanceof TokenExpiredError) {
+    return next();
+  } catch (error: any) {
+    if (error instanceof TokenExpiredError || error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
         message: "Access token expired",
+        code: "TOKEN_EXPIRED",
       });
     }
 
     return res.status(401).json({
       success: false,
       message: "Invalid access token",
+      code: "INVALID_TOKEN",
     });
   }
 };

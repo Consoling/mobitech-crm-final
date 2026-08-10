@@ -41,7 +41,12 @@ const menuItems: MenuItem[] = [
   {
     label: "Models",
     icon: Smartphone,
-    path: "/models",
+    subItems: [
+      { label: "Manage Models", path: "/models" },
+      { label: "Orphan Models", path: "/models/orphan-models" },
+
+    ],
+
   },
   {
     label: "Logistics",
@@ -159,12 +164,11 @@ const Sidebar = () => {
     return subItems.some((item) => location.pathname === item.path);
   };
 
-  
+
   return (
     <aside
-      className={`hidden md:flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-in-out h-screen ${
-        isExpanded ? "w-64" : "w-20"
-      }`}
+      className={`hidden md:flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-in-out h-screen ${isExpanded ? "w-64" : "w-20"
+        }`}
     >
       <ConfirmDialog
         open={logoutOpen}
@@ -181,16 +185,14 @@ const Sidebar = () => {
       {/* Fixed Header - Logo Only */}
       <div className="flex items-center shadow-lg h-15 border-b border-gray-200 px-4 relative">
         <div
-          className={`flex items-center transition-all duration-300 ${
-            isExpanded ? "justify-start flex-1" : "justify-center w-full"
-          }`}
+          className={`flex items-center transition-all duration-300 ${isExpanded ? "justify-start flex-1" : "justify-center w-full"
+            }`}
         >
           <img
             src="/sidebar-logo.png"
             alt="Mobitech Logo"
-            className={`object-contain transition-all duration-300 ${
-              isExpanded ? "h-11" : "h-8 w-8"
-            }`}
+            className={`object-contain transition-all duration-300 ${isExpanded ? "h-11" : "h-8 w-8"
+              }`}
           />
         </div>
         {isExpanded && (
@@ -215,7 +217,7 @@ const Sidebar = () => {
 
       {/* Scrollable Menu */}
       <div className="flex-1 overflow-y-auto py-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-        
+
 
         {/* Menu Items */}
         <nav className="space-y-1 px-2">
@@ -225,11 +227,10 @@ const Sidebar = () => {
                 <>
                   <button
                     onClick={() => toggleMenu(item.label)}
-                    className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                      isParentActive(item.subItems)
-                        ? "bg-blue-50 text-[#296CFF]"
-                        : "text-[#0F172B] hover:bg-gray-100"
-                    } ${isExpanded ? "justify-between" : "justify-center"}`}
+                    className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${isParentActive(item.subItems)
+                      ? "bg-blue-50 text-[#296CFF]"
+                      : "text-[#0F172B] hover:bg-gray-100"
+                      } ${isExpanded ? "justify-between" : "justify-center"}`}
                   >
                     <div className="flex items-center gap-3">
                       <item.icon size={18} />
@@ -242,9 +243,8 @@ const Sidebar = () => {
                     {isExpanded && (
                       <ChevronDown
                         size={16}
-                        className={`transition-transform duration-200 ${
-                          expandedMenus.includes(item.label) ? "rotate-180" : ""
-                        }`}
+                        className={`transition-transform duration-200 ${expandedMenus.includes(item.label) ? "rotate-180" : ""
+                          }`}
                       />
                     )}
                   </button>
@@ -258,11 +258,10 @@ const Sidebar = () => {
                           <div className="absolute left-0 top-1/2 w-3 h-px bg-gray-300"></div>
                           <Link
                             to={subItem.path}
-                            className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ml-3 ${
-                              isActive(subItem.path)
-                                ? "bg-[#296CFF] text-white font-medium"
-                                : "text-gray-600 hover:bg-gray-100"
-                            }`}
+                            className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ml-3 ${isActive(subItem.path)
+                              ? "bg-[#296CFF] text-white font-medium"
+                              : "text-gray-600 hover:bg-gray-100"
+                              }`}
                           >
                             {subItem.label}
                           </Link>
@@ -274,11 +273,10 @@ const Sidebar = () => {
               ) : (
                 <Link
                   to={item.path!}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive(item.path)
-                      ? "bg-[#296CFF] text-white font-medium"
-                      : "text-gray-700 hover:bg-gray-100"
-                  } ${!isExpanded && "justify-center"}`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive(item.path)
+                    ? "bg-[#296CFF] text-white font-medium"
+                    : "text-gray-700 hover:bg-gray-100"
+                    } ${!isExpanded && "justify-center"}`}
                 >
                   <item.icon size={20} />
                   {isExpanded && (
@@ -307,11 +305,10 @@ const Sidebar = () => {
                 <>
                   <button
                     onClick={() => toggleMenu(item.label)}
-                    className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                      isParentActive(item.subItems)
-                        ? "bg-blue-50 text-[#296CFF]"
-                        : "text-[#0F172B] hover:bg-gray-100"
-                    } ${isExpanded ? "justify-between" : "justify-center"}`}
+                    className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${isParentActive(item.subItems)
+                      ? "bg-blue-50 text-[#296CFF]"
+                      : "text-[#0F172B] hover:bg-gray-100"
+                      } ${isExpanded ? "justify-between" : "justify-center"}`}
                   >
                     <div className="flex items-center gap-3">
                       <item.icon size={18} />
@@ -324,9 +321,8 @@ const Sidebar = () => {
                     {isExpanded && (
                       <ChevronDown
                         size={16}
-                        className={`transition-transform duration-200 ${
-                          expandedMenus.includes(item.label) ? "rotate-180" : ""
-                        }`}
+                        className={`transition-transform duration-200 ${expandedMenus.includes(item.label) ? "rotate-180" : ""
+                          }`}
                       />
                     )}
                   </button>
@@ -340,11 +336,10 @@ const Sidebar = () => {
                           <div className="absolute left-0 top-1/2 w-3 h-px bg-gray-300"></div>
                           <Link
                             to={subItem.path}
-                            className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ml-3 ${
-                              isActive(subItem.path)
-                                ? "bg-[#296CFF] text-white font-medium"
-                                : "text-gray-600 hover:bg-gray-100"
-                            }`}
+                            className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ml-3 ${isActive(subItem.path)
+                              ? "bg-[#296CFF] text-white font-medium"
+                              : "text-gray-600 hover:bg-gray-100"
+                              }`}
                           >
                             {subItem.label}
                           </Link>
@@ -356,11 +351,10 @@ const Sidebar = () => {
               ) : (
                 <Link
                   to={item.path!}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                    isActive(item.path)
-                      ? "bg-[#296CFF] text-white font-medium"
-                      : "text-gray-700 hover:bg-gray-100"
-                  } ${!isExpanded && "justify-center"}`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive(item.path)
+                    ? "bg-[#296CFF] text-white font-medium"
+                    : "text-gray-700 hover:bg-gray-100"
+                    } ${!isExpanded && "justify-center"}`}
                 >
                   <item.icon size={20} />
                   {isExpanded && (
@@ -377,9 +371,8 @@ const Sidebar = () => {
       <div className="border-y border-gray-200 p-2 space-y-3">
         <button
           onClick={() => setLogoutOpen(true)}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-red-600 hover:bg-red-50 transition-all duration-200 ${
-            !isExpanded && "justify-center"
-          }`}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-red-600 hover:bg-red-50 transition-all duration-200 ${!isExpanded && "justify-center"
+            }`}
         >
           <LogOut size={20} />
           {isExpanded && <span className="font-medium text-sm">Logout</span>}

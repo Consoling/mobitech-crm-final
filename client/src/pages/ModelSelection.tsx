@@ -14,9 +14,9 @@ const CACHE_KEY = "brand_counts_cache";
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 const ModelSelection = () => {
-  const [searchText, setSearchText] = useState<string>("");
   const [brandCounts, setBrandCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState<boolean>(true);
+  const [searchText, setSearchText] = useState<string>("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,7 +27,7 @@ const ModelSelection = () => {
         if (cachedData) {
           const { data, timestamp } = JSON.parse(cachedData);
           const now = Date.now();
-          
+
           // Use cached data if it's less than 10 minutes old
           if (now - timestamp < CACHE_DURATION) {
             setBrandCounts(data);
@@ -90,7 +90,7 @@ const ModelSelection = () => {
           </p>
         </div>
 
-       
+
       </div>
 
       {/* Search bar and filter */}
@@ -125,7 +125,7 @@ interface BrandSelectionProps {
 }
 
 const BrandSelection = ({ brandCounts, loading }: BrandSelectionProps) => {
-const route = useNavigate();
+  const route = useNavigate();
   const handleBrandSelect = (brandId: string) => {
     route(`/model/${brandId}`);
   }

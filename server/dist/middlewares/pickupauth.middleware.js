@@ -42,7 +42,8 @@ const authenticate = (req, res, next) => {
         if (!authHeader?.startsWith("Bearer ")) {
             return res.status(401).json({
                 success: false,
-                message: "Unauthorized",
+                message: "Unauthorized - Missing or malformed token",
+                code: "UNAUTHORIZED",
             });
         }
         const token = authHeader.split(" ")[1];
@@ -51,24 +52,27 @@ const authenticate = (req, res, next) => {
             return res.status(401).json({
                 success: false,
                 message: "Invalid token type",
+                code: "INVALID_TOKEN_TYPE",
             });
         }
         req.user = {
             userId: decoded.sub,
             role: decoded.role,
         };
-        next();
+        return next();
     }
     catch (error) {
-        if (error instanceof jsonwebtoken_1.TokenExpiredError) {
+        if (error instanceof jsonwebtoken_1.TokenExpiredError || error.name === "TokenExpiredError") {
             return res.status(401).json({
                 success: false,
                 message: "Access token expired",
+                code: "TOKEN_EXPIRED",
             });
         }
         return res.status(401).json({
             success: false,
             message: "Invalid access token",
+            code: "INVALID_TOKEN",
         });
     }
 };

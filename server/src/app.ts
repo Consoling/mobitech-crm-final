@@ -20,6 +20,7 @@ import mfaDiagnoseRoutes from "./routes/diagnose_routes/mfa.route";
 import verifySelfieRoutes from "./routes/diagnose_routes/verify-selfie.route";
 import getDeviceFromModelCodeRoute from "./routes/diagnose_routes/device-data.route";
 import uploadDiagDataRoute from "./routes/diagnose_routes/upload-diag-data.route";
+import manageDiagDataRoute from "./routes/pickup_routes/business/manage-diag-data.route";
 import teamRoutes from "./routes/team.route";
 import customerRoutes from './routes/customer.route';
 import getModelsByBrandRoute from "./routes/pickup_app_routes/get-models-by-brand.route";
@@ -118,6 +119,7 @@ app.use(`/api/v1/diagnose`, verifySelfieRoutes);
 app.use(`/api/v1/diagnose`, getDeviceFromModelCodeRoute);
 app.use(`/api/v1/diagnose`, uploadDiagDataRoute);
 
+
 app.use(`/api/v2/pickup`, getModelsByBrandRoute);
 app.use(`/api/v2/pickup`, getIndividualModelDataRoute);
 app.use(`/api/v2`, getQCReportInitDataRoute);
@@ -152,6 +154,8 @@ app.use(`/api/v2/pickup`, getFinalUrlRoute);
 // NEW Pickup APP routes
 app.use(`/api/v3/auth`, pickupAuthRoutes);
 app.use(`/api/v3/model-data`, modelDataRoutes);
+
+app.use(`/api/v3/diagnostics`, manageDiagDataRoute);
 
 app.use(`/api/v3/doorstep-pickup`, doorstepRoutes);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {

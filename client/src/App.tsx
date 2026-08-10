@@ -20,7 +20,7 @@ import QCReports from "./pages/reports/QCReports";
 import ViewQCReport from "./pages/reports/ViewQCReport";
 import APKDownload from "./pages/APKDownload";
 
-import  TeamDashboard from './pages/team/TeamDashboard'
+import TeamDashboard from './pages/team/TeamDashboard'
 import EditEmployee from "./pages/team/EditEmployee";
 import ViewEmployee from "./pages/team/ViewEmployee";
 import ViewStore from "./pages/team/ViewStore";
@@ -36,30 +36,32 @@ import PartyDashboard from "./pages/parties/PartyDashboard";
 import AddParty from "./pages/parties/AddParty";
 import ViewParty from "./pages/parties/ViewParties";
 import ManageParty from "./pages/parties/ManageParties";
+import OrphanModels from "./pages/OrphanModels";
 
 
 const App = () => {
   const location = useLocation();
   return (
     <>
-        <Routes location={location} key={location.pathname}>
-          {/* Public Routes */}
-          <Route path="/" element={<Navigate to="/login" />} />
-          <Route path="/mdt" element={<APKDownload />} />
-          <Route path="/declaration/:id" element={<DeclarationPage />} />
-          
-          <Route element={<PublicLayout />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/totp-verify" element={<TOTPVerify />} />
-            <Route path="/mfa-setup" element={<MFASetup />} />
-          </Route>
+      <Routes location={location} key={location.pathname}>
+        {/* Public Routes */}
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/mdt" element={<APKDownload />} />
+        <Route path="/declaration/:id" element={<DeclarationPage />} />
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedLayout />}>
+        <Route element={<PublicLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/totp-verify" element={<TOTPVerify />} />
+          <Route path="/mfa-setup" element={<MFASetup />} />
+        </Route>
+
+        {/* Protected Routes */}
+        <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<div>Dashboard Page</div>} />
 
           <Route path="/wallet/wallet-balances" element={<WalletBalances />} />
           <Route path="/wallet/view-balance" element={<WalletBalance />} />
+          <Route path="/models/orphan-models" element={<OrphanModels />} />
           <Route path="/models" element={<ModelSelection />} />
           <Route path="/model/:brandId" element={<ModelsView />} />
           <Route path="/model/:brandName/:modelId" element={<ModelView />} />
@@ -88,14 +90,14 @@ const App = () => {
           <Route path='/clients/view-party/:partyId' element={<ViewParty />} />
           <Route path='/clients/edit-party/:partyId' element={<ManageParty />} />
 
-            {/* Add your protected routes here */}
-            {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}
-          </Route>
+          {/* Add your protected routes here */}
+          {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}
+        </Route>
 
-          {/* 404 Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      
+        {/* 404 Route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+
     </>
   );
 };

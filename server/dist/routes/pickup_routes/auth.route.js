@@ -108,8 +108,8 @@ router.post(`/login/initiate`, async (req, res) => {
 });
 router.post(`/login/verify`, async (req, res) => {
     try {
-        const { loginSessionId, otp } = req.body;
-        if (!loginSessionId || !otp) {
+        const { loginSessionId, totp } = req.body;
+        if (!loginSessionId || !totp) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid Login",
@@ -185,7 +185,7 @@ router.post(`/login/verify`, async (req, res) => {
         const isValidOtp = speakeasy_1.default.totp.verify({
             secret: user.mfaSecret,
             encoding: "base32",
-            token: otp,
+            token: totp,
             window: 1,
         });
         if (!isValidOtp) {

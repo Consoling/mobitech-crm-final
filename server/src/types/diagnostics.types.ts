@@ -61,3 +61,54 @@ export interface DiagnosticsDataResponse {
   data?: any;
   error?: string;
 }
+
+export interface StandardDiagnosticsResult {
+  diagnoseType: "mobitech" | "self";
+  mtype: "mbdg" | "sfdg";
+  testId: string;
+  imei1: string;
+  imei2: string;
+  modelName: string;
+  ram: string;
+  rom: string;
+  bluetooth: boolean;
+  gps: boolean;
+  wifi: boolean;
+  proximity: boolean;
+  multiTouch: boolean;
+  screenCalibration: boolean;
+  speaker: boolean;
+  earReceiver: boolean;
+  microphone: boolean;
+  frontCamera: boolean;
+  backCamera: boolean;
+  sim: boolean;
+  fingerprint: boolean;
+  chargingPort: boolean;
+  audioJack: boolean;
+}
+
+export interface UpdateDiagnosticsDataInput {
+  imei1?: string;
+  imei2?: string;
+  modelName?: string;
+  ram?: string;
+  rom?: string;
+  bluetooth?: boolean | string;
+  gps?: boolean | string;
+  wifi?: boolean | string;
+  proximity?: boolean | string;
+  multiTouch?: boolean | string;
+  screenCalibration?: boolean | string;
+  speaker?: boolean | string;
+  earReceiver?: boolean | string;
+  microphone?: boolean | string;
+  frontCamera?: boolean | string;
+  backCamera?: boolean | string;
+  sim?: boolean | string;
+  fingerprint?: boolean | string;
+  chargingPort?: boolean | string;
+  audioJack?: boolean | string;
+  [key: string]: any;
+}
+

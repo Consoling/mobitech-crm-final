@@ -436,10 +436,13 @@ model DoorstepPickup {
   variant                 String?
   imei1                   String?
   imei2                   String?
+  mbdgReport              Json?
+  diagnosticsProcess      String?
   deviceFrontImage        String?
   deviceBackImage         String?
-  diagnosticsProcess      String?
-  mbdgReport              Json?
+  aboutImage                 String?
+  IMEIImage                 String?
+  manualQcReport          Json?
   diagnosticsProcessInit  String?
   qcReportInit            String?
   qcReport                String?
@@ -472,7 +475,6 @@ model DoorstepPickup {
   paymentMode             String?
   exchangeModel           String?
   newModelIMEI            String?
-  manualQcReport          Json?
   remarks                 String?
   finalAmount             String?
   sellingAmount           String?
