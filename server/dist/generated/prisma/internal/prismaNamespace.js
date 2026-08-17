@@ -49,7 +49,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PartiesScalarFieldEnum = exports.CustomersScalarFieldEnum = exports.DiagnosticsDataScalarFieldEnum = exports.DoorstepPickupScalarFieldEnum = exports.DeclarationScalarFieldEnum = exports.ManualDiagnosticsResultScalarFieldEnum = exports.CustomModelScalarFieldEnum = exports.CustomModelBrandScalarFieldEnum = exports.OtpScalarFieldEnum = exports.AddressScalarFieldEnum = exports.AudioJackTestScalarFieldEnum = exports.UsbTestScalarFieldEnum = exports.FingerprintTestScalarFieldEnum = exports.CameraTestScalarFieldEnum = exports.ProximitySensorTestScalarFieldEnum = exports.AudioTestScalarFieldEnum = exports.ScreenTestScalarFieldEnum = exports.SimTestResultScalarFieldEnum = exports.DeviceTestResultScalarFieldEnum = exports.ConnectivityTestResultScalarFieldEnum = exports.DeviceTestScalarFieldEnum = exports.NotificationScalarFieldEnum = exports.SessionScalarFieldEnum = exports.BankDetailsScalarFieldEnum = exports.StoreScalarFieldEnum = exports.SalesExecutiveScalarFieldEnum = exports.FieldExecutiveScalarFieldEnum = exports.TechnicianScalarFieldEnum = exports.ManagerScalarFieldEnum = exports.AdminScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.prismaVersion = exports.getExtensionContext = exports.Decimal = exports.Sql = exports.raw = exports.join = exports.empty = exports.sql = exports.PrismaClientValidationError = exports.PrismaClientInitializationError = exports.PrismaClientRustPanicError = exports.PrismaClientUnknownRequestError = exports.PrismaClientKnownRequestError = void 0;
-exports.defineExtension = exports.JsonNullValueFilter = exports.NullsOrder = exports.QueryMode = exports.NullableJsonNullValueInput = exports.JsonNullValueInput = exports.SortOrder = exports.PickupAppSessionScalarFieldEnum = exports.PartyPurchasesScalarFieldEnum = exports.PurchasesScalarFieldEnum = void 0;
+exports.defineExtension = exports.JsonNullValueFilter = exports.NullsOrder = exports.QueryMode = exports.NullableJsonNullValueInput = exports.JsonNullValueInput = exports.SortOrder = exports.SelfDiagnoseDataScalarFieldEnum = exports.PickupAppSessionScalarFieldEnum = exports.PartyPurchasesScalarFieldEnum = exports.PurchasesScalarFieldEnum = void 0;
 const runtime = __importStar(require("@prisma/client/runtime/client"));
 /**
  * Prisma Errors
@@ -137,7 +137,8 @@ exports.ModelName = {
     Parties: 'Parties',
     Purchases: 'Purchases',
     PartyPurchases: 'PartyPurchases',
-    PickupAppSession: 'PickupAppSession'
+    PickupAppSession: 'PickupAppSession',
+    SelfDiagnoseData: 'SelfDiagnoseData'
 };
 /**
  * Enums
@@ -617,6 +618,49 @@ exports.PickupAppSessionScalarFieldEnum = {
     ipAddress: 'ipAddress',
     revoked: 'revoked',
     lastUsedAt: 'lastUsedAt',
+    expiresAt: 'expiresAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.SelfDiagnoseDataScalarFieldEnum = {
+    id: 'id',
+    employeeId: 'employeeId',
+    orderId: 'orderId',
+    currentStep: 'currentStep',
+    stage: 'stage',
+    deviceType: 'deviceType',
+    brand: 'brand',
+    smc: 'smc',
+    selectedSDModel: 'selectedSDModel',
+    variant: 'variant',
+    imei1: 'imei1',
+    imei2: 'imei2',
+    imeiVerifiedData: 'imeiVerifiedData',
+    bluetoothTest: 'bluetoothTest',
+    gpsTest: 'gpsTest',
+    wifiTest: 'wifiTest',
+    proximitySensorTest: 'proximitySensorTest',
+    screenCalibrationTest: 'screenCalibrationTest',
+    multiTouchTest: 'multiTouchTest',
+    speakerTest: 'speakerTest',
+    earReceiverTest: 'earReceiverTest',
+    microphoneTest: 'microphoneTest',
+    frontCameraTest: 'frontCameraTest',
+    backCameraTest: 'backCameraTest',
+    simTest: 'simTest',
+    fingerprintTest: 'fingerprintTest',
+    chargingPortTest: 'chargingPortTest',
+    silentSwitchTest: 'silentSwitchTest',
+    faceIdTest: 'faceIdTest',
+    zeroPointFiveXCameraTest: 'zeroPointFiveXCameraTest',
+    copyScreenTest: 'copyScreenTest',
+    batteryHealthTest: 'batteryHealthTest',
+    VolumeButtonTest: 'VolumeButtonTest',
+    powerButtonTest: 'powerButtonTest',
+    screenDiscolorationTest: 'screenDiscolorationTest',
+    vibrationTest: 'vibrationTest',
+    audioJackTest: 'audioJackTest',
+    isPhoneRepairNeeded: 'isPhoneRepairNeeded',
     expiresAt: 'expiresAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'

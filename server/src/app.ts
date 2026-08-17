@@ -22,7 +22,7 @@ import getDeviceFromModelCodeRoute from "./routes/diagnose_routes/device-data.ro
 import uploadDiagDataRoute from "./routes/diagnose_routes/upload-diag-data.route";
 import manageDiagDataRoute from "./routes/pickup_routes/business/manage-diag-data.route";
 import teamRoutes from "./routes/team.route";
-import customerRoutes from './routes/customer.route';
+import customerRoutes from "./routes/customer.route";
 import getModelsByBrandRoute from "./routes/pickup_app_routes/get-models-by-brand.route";
 import getIndividualModelDataRoute from "./routes/pickup_app_routes/get-individual-mode-data.route";
 import getQCReportInitDataRoute from "./routes/pickup_app_routes/get-qc-report-init-data.route";
@@ -39,9 +39,9 @@ import getDeclarationRoute from "./routes/pickup_app_routes/declaration/get-decl
 import acceptDeclarationRoute from "./routes/pickup_app_routes/declaration/accept-declaration.route";
 import checkDeclarationStatusRoute from "./routes/pickup_app_routes/declaration/check-declaration.route";
 
-import sendOtpForPickupRoute from "./routes/pickup_app_routes/otp/send.route"
-import verifyOtpForPickupRoute from "./routes/pickup_app_routes/otp/verify.route"
-import sendOtpForVerificationPickupRoute from "./routes/pickup_app_routes/otp/send-verification-otp.route"
+import sendOtpForPickupRoute from "./routes/pickup_app_routes/otp/send.route";
+import verifyOtpForPickupRoute from "./routes/pickup_app_routes/otp/verify.route";
+import sendOtpForVerificationPickupRoute from "./routes/pickup_app_routes/otp/send-verification-otp.route";
 
 import verifyBankForPickupRoute from "./routes/pickup_app_routes/bank/verify-bank.route";
 import verifyUPIForPickupRoute from "./routes/pickup_app_routes/upi/verify-upi.route";
@@ -55,12 +55,12 @@ import generatePreSignedUrlRoute from "./routes/pickup_app_routes/final-upload/p
 import getFinalUrlRoute from "./routes/pickup_app_routes/final-upload/get-final-url.route";
 // import uploadFinalDataRoute from "./routes/pickup_app_routes/final-upload/upload-data.route";
 
-
 // NEW Pickup APP imports
 
 import pickupAuthRoutes from "./routes/pickup_routes/auth.route";
 import modelDataRoutes from "./routes/pickup_routes/business/modeldata.route";
 import doorstepRoutes from "./routes/pickup_routes/business/doorstep-pickup.routes";
+import mselfDiagnoseRoutes from "./routes/pickup_routes/business/self-diagnose.route";
 
 import { connectDb } from "./lib/connectDb";
 const app = express();
@@ -119,13 +119,12 @@ app.use(`/api/v1/diagnose`, verifySelfieRoutes);
 app.use(`/api/v1/diagnose`, getDeviceFromModelCodeRoute);
 app.use(`/api/v1/diagnose`, uploadDiagDataRoute);
 
-
 app.use(`/api/v2/pickup`, getModelsByBrandRoute);
 app.use(`/api/v2/pickup`, getIndividualModelDataRoute);
 app.use(`/api/v2`, getQCReportInitDataRoute);
-app.use(`/api/v2/pickup`, appLoginRoute)
-app.use(`/api/v2/pickup`, verifyAppOtpRoute)
-app.use(`/api/v2/pickup`, verifyAppTokenRoute)
+app.use(`/api/v2/pickup`, appLoginRoute);
+app.use(`/api/v2/pickup`, verifyAppOtpRoute);
+app.use(`/api/v2/pickup`, verifyAppTokenRoute);
 app.use(`/api/v2/pickup`, fetchInitAppDataRoute);
 app.use(`/api/v2/pickup`, uploadManualDiagnosticsDataRoute);
 app.use(`/api/v2/pickup`, fetchManualDiagnosticsDataRoute);
@@ -150,7 +149,6 @@ app.use(`/api/v2/pickup`, generatePreSignedUrlRoute);
 app.use(`/api/v2/pickup`, getFinalUrlRoute);
 // app.use(`/api/v2/pickup`, uploadFinalDataRoute);
 
-
 // NEW Pickup APP routes
 app.use(`/api/v3/auth`, pickupAuthRoutes);
 app.use(`/api/v3/model-data`, modelDataRoutes);
@@ -158,6 +156,8 @@ app.use(`/api/v3/model-data`, modelDataRoutes);
 app.use(`/api/v3/diagnostics`, manageDiagDataRoute);
 
 app.use(`/api/v3/doorstep-pickup`, doorstepRoutes);
+app.use(`/api/v3/self-diagnose`, mselfDiagnoseRoutes);
+app.use(`/api/v3/utils`, utilRoutes);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
   try {
     const body = req.body;

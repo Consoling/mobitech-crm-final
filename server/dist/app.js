@@ -56,6 +56,7 @@ const get_final_url_route_1 = __importDefault(require("./routes/pickup_app_route
 const auth_route_3 = __importDefault(require("./routes/pickup_routes/auth.route"));
 const modeldata_route_1 = __importDefault(require("./routes/pickup_routes/business/modeldata.route"));
 const doorstep_pickup_routes_1 = __importDefault(require("./routes/pickup_routes/business/doorstep-pickup.routes"));
+const self_diagnose_route_1 = __importDefault(require("./routes/pickup_routes/business/self-diagnose.route"));
 const connectDb_1 = require("./lib/connectDb");
 const app = (0, express_1.default)();
 const allowedOrigins = Array.from(new Set([
@@ -133,6 +134,8 @@ app.use(`/api/v3/auth`, auth_route_3.default);
 app.use(`/api/v3/model-data`, modeldata_route_1.default);
 app.use(`/api/v3/diagnostics`, manage_diag_data_route_1.default);
 app.use(`/api/v3/doorstep-pickup`, doorstep_pickup_routes_1.default);
+app.use(`/api/v3/self-diagnose`, self_diagnose_route_1.default);
+app.use(`/api/v3/utils`, util_routes_1.default);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
     try {
         const body = req.body;
