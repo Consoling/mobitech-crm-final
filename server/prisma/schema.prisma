@@ -436,6 +436,7 @@ model DoorstepPickup {
   imei1                   String?
   imei2                   String?
   mbdgReport              Json?
+  isModelMismatchDetected          Boolean?
   diagnosticsProcess      String?
   deviceFrontImage        String?
   deviceBackImage         String?

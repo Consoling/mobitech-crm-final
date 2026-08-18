@@ -432,6 +432,7 @@ exports.DoorstepPickupScalarFieldEnum = {
     imei1: 'imei1',
     imei2: 'imei2',
     mbdgReport: 'mbdgReport',
+    isModelMismatchDetected: 'isModelMismatchDetected',
     diagnosticsProcess: 'diagnosticsProcess',
     deviceFrontImage: 'deviceFrontImage',
     deviceBackImage: 'deviceBackImage',
