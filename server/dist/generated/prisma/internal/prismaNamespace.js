@@ -472,6 +472,7 @@ exports.DoorstepPickupScalarFieldEnum = {
     qcReportInit: 'qcReportInit',
     qcReport: 'qcReport',
     repairRequired: 'repairRequired',
+    deviceIssues: 'deviceIssues',
     repairStatus: 'repairStatus',
     accessories: 'accessories',
     deviceAge: 'deviceAge',

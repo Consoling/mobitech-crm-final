@@ -20,7 +20,7 @@ import mfaDiagnoseRoutes from "./routes/diagnose_routes/mfa.route";
 import verifySelfieRoutes from "./routes/diagnose_routes/verify-selfie.route";
 import getDeviceFromModelCodeRoute from "./routes/diagnose_routes/device-data.route";
 import uploadDiagDataRoute from "./routes/diagnose_routes/upload-diag-data.route";
-import manageDiagDataRoute from "./routes/pickup_routes/business/manage-diag-data.route";
+import manageDiagDataRoute from "./routes/pickup_routes/business/diagnose-data.route";
 import teamRoutes from "./routes/team.route";
 import customerRoutes from "./routes/customer.route";
 import getModelsByBrandRoute from "./routes/pickup_app_routes/get-models-by-brand.route";

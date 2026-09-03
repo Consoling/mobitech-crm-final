@@ -14,6 +14,7 @@ const deviceSchema = new mongoose_1.default.Schema({
     productUrl: { type: String },
     scrapedAt: { type: Date },
     smc: { type: String, index: true },
+    releaseDate: { type: String },
     detailedSpecifications: {
         title: { type: String },
         price: { type: String },

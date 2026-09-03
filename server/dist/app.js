@@ -24,7 +24,7 @@ const mfa_route_2 = __importDefault(require("./routes/diagnose_routes/mfa.route"
 const verify_selfie_route_1 = __importDefault(require("./routes/diagnose_routes/verify-selfie.route"));
 const device_data_route_2 = __importDefault(require("./routes/diagnose_routes/device-data.route"));
 const upload_diag_data_route_1 = __importDefault(require("./routes/diagnose_routes/upload-diag-data.route"));
-const manage_diag_data_route_1 = __importDefault(require("./routes/pickup_routes/business/manage-diag-data.route"));
+const diagnose_data_route_1 = __importDefault(require("./routes/pickup_routes/business/diagnose-data.route"));
 const team_route_1 = __importDefault(require("./routes/team.route"));
 const customer_route_1 = __importDefault(require("./routes/customer.route"));
 const get_models_by_brand_route_1 = __importDefault(require("./routes/pickup_app_routes/get-models-by-brand.route"));
@@ -132,7 +132,7 @@ app.use(`/api/v2/pickup`, get_final_url_route_1.default);
 // NEW Pickup APP routes
 app.use(`/api/v3/auth`, auth_route_3.default);
 app.use(`/api/v3/model-data`, modeldata_route_1.default);
-app.use(`/api/v3/diagnostics`, manage_diag_data_route_1.default);
+app.use(`/api/v3/diagnostics`, diagnose_data_route_1.default);
 app.use(`/api/v3/doorstep-pickup`, doorstep_pickup_routes_1.default);
 app.use(`/api/v3/self-diagnose`, self_diagnose_route_1.default);
 app.use(`/api/v3/utils`, util_routes_1.default);

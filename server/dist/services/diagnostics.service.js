@@ -364,6 +364,7 @@ class DiagnosticsService {
             where: { testId },
         });
         if (mobitechDiag) {
+            console.log(`Found Mobitech diagnostics data for testId: ${testId}`, mobitechDiag);
             return this.formatMobitechDiagnostics(mobitechDiag);
         }
         const selfDiag = await prisma_1.prisma.manualDiagnosticsResult.findUnique({

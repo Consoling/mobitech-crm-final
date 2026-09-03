@@ -410,6 +410,8 @@ export class DiagnosticsService {
     });
 
     if (mobitechDiag) {
+
+      console.log(`Found Mobitech diagnostics data for testId: ${testId}`, mobitechDiag);
       return this.formatMobitechDiagnostics(mobitechDiag);
     }
 

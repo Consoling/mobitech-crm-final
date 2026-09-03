@@ -447,6 +447,7 @@ model DoorstepPickup {
   qcReportInit            String?
   qcReport                String?
   repairRequired          String?
+  deviceIssues           String?
   repairStatus            String?
   accessories             String?
   deviceAge               String?
