@@ -62,6 +62,9 @@ const app = (0, express_1.default)();
 const allowedOrigins = Array.from(new Set([
     ...env_1.SYS_ENV.FRONTEND_URLS,
     "https://www.mobitech-crm.in",
+    "https://www.techmobee.in",
+    "https://techmobee.in",
+    "https://techmobee.vercel.app",
     "https://mobitech-crm.in",
     "http://192.168.29.161:3000",
     "http://localhost:3000"
