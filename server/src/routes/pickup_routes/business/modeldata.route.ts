@@ -35,6 +35,8 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { deviceType } = req.body;
+      const queries = req.query;
+      console.log("Received device count request with queries:", queries);
 
       console.log("Received device count request for type:", deviceType);
       if (!deviceType) {
@@ -75,7 +77,7 @@ router.post(
 
       const brands = allowedBrands.map((brand) => ({
         brand,
-        count: countMap.get(brand.toLowerCase()) || 0,
+        count: String(queries.hdCT) !== "1" ? countMap.get(brand.toLowerCase()) || 0 : 0,
       }));
 
       return res.status(200).json({

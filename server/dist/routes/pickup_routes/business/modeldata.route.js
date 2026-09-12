@@ -32,6 +32,8 @@ const BRANDS = {
 router.post("/device-count", pickupauth_middleware_1.authenticate, async (req, res) => {
     try {
         const { deviceType } = req.body;
+        const queries = req.query;
+        console.log("Received device count request with queries:", queries);
         console.log("Received device count request for type:", deviceType);
         if (!deviceType) {
             return res.status(400).json({
@@ -64,7 +66,7 @@ router.post("/device-count", pickupauth_middleware_1.authenticate, async (req, r
         const countMap = new Map(dbCounts.map((item) => [item._id.toLowerCase(), item.count]));
         const brands = allowedBrands.map((brand) => ({
             brand,
-            count: countMap.get(brand.toLowerCase()) || 0,
+            count: String(queries.hdCT) !== "1" ? countMap.get(brand.toLowerCase()) || 0 : 0,
         }));
         return res.status(200).json({
             success: true,

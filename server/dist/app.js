@@ -63,6 +63,8 @@ const allowedOrigins = Array.from(new Set([
     ...env_1.SYS_ENV.FRONTEND_URLS,
     "https://www.mobitech-crm.in",
     "https://mobitech-crm.in",
+    "http://192.168.29.161:3000",
+    "http://localhost:3000"
 ]));
 const corsOptions = {
     origin(origin, callback) {
@@ -136,6 +138,9 @@ app.use(`/api/v3/diagnostics`, diagnose_data_route_1.default);
 app.use(`/api/v3/doorstep-pickup`, doorstep_pickup_routes_1.default);
 app.use(`/api/v3/self-diagnose`, self_diagnose_route_1.default);
 app.use(`/api/v3/utils`, util_routes_1.default);
+// For Tech Mobee
+app.use(`/api/v3/enquire`, send_route_1.default);
+app.use(`/api/v3/enquire`, verify_route_1.default);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
     try {
         const body = req.body;
