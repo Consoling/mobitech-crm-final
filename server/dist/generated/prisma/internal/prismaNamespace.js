@@ -49,7 +49,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PartiesScalarFieldEnum = exports.CustomersScalarFieldEnum = exports.DiagnosticsDataScalarFieldEnum = exports.DoorstepPickupScalarFieldEnum = exports.DeclarationScalarFieldEnum = exports.ManualDiagnosticsResultScalarFieldEnum = exports.CustomModelScalarFieldEnum = exports.CustomModelBrandScalarFieldEnum = exports.OtpScalarFieldEnum = exports.AddressScalarFieldEnum = exports.AudioJackTestScalarFieldEnum = exports.UsbTestScalarFieldEnum = exports.FingerprintTestScalarFieldEnum = exports.CameraTestScalarFieldEnum = exports.ProximitySensorTestScalarFieldEnum = exports.AudioTestScalarFieldEnum = exports.ScreenTestScalarFieldEnum = exports.SimTestResultScalarFieldEnum = exports.DeviceTestResultScalarFieldEnum = exports.ConnectivityTestResultScalarFieldEnum = exports.DeviceTestScalarFieldEnum = exports.NotificationScalarFieldEnum = exports.SessionScalarFieldEnum = exports.BankDetailsScalarFieldEnum = exports.StoreScalarFieldEnum = exports.SalesExecutiveScalarFieldEnum = exports.FieldExecutiveScalarFieldEnum = exports.TechnicianScalarFieldEnum = exports.ManagerScalarFieldEnum = exports.AdminScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.prismaVersion = exports.getExtensionContext = exports.Decimal = exports.Sql = exports.raw = exports.join = exports.empty = exports.sql = exports.PrismaClientValidationError = exports.PrismaClientInitializationError = exports.PrismaClientRustPanicError = exports.PrismaClientUnknownRequestError = exports.PrismaClientKnownRequestError = void 0;
-exports.defineExtension = exports.JsonNullValueFilter = exports.NullsOrder = exports.QueryMode = exports.NullableJsonNullValueInput = exports.JsonNullValueInput = exports.SortOrder = exports.SelfDiagnoseDataScalarFieldEnum = exports.PickupAppSessionScalarFieldEnum = exports.PartyPurchasesScalarFieldEnum = exports.PurchasesScalarFieldEnum = void 0;
+exports.defineExtension = exports.JsonNullValueFilter = exports.NullsOrder = exports.QueryMode = exports.NullableJsonNullValueInput = exports.JsonNullValueInput = exports.SortOrder = exports.LeadDataScalarFieldEnum = exports.SelfDiagnoseDataScalarFieldEnum = exports.PickupAppSessionScalarFieldEnum = exports.PartyPurchasesScalarFieldEnum = exports.PurchasesScalarFieldEnum = void 0;
 const runtime = __importStar(require("@prisma/client/runtime/client"));
 /**
  * Prisma Errors
@@ -138,7 +138,8 @@ exports.ModelName = {
     Purchases: 'Purchases',
     PartyPurchases: 'PartyPurchases',
     PickupAppSession: 'PickupAppSession',
-    SelfDiagnoseData: 'SelfDiagnoseData'
+    SelfDiagnoseData: 'SelfDiagnoseData',
+    LeadData: 'LeadData'
 };
 /**
  * Enums
@@ -664,6 +665,18 @@ exports.SelfDiagnoseDataScalarFieldEnum = {
     audioJackTest: 'audioJackTest',
     isPhoneRepairNeeded: 'isPhoneRepairNeeded',
     expiresAt: 'expiresAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.LeadDataScalarFieldEnum = {
+    id: 'id',
+    sessionId: 'sessionId',
+    name: 'name',
+    address: 'address',
+    mobileNumber: 'mobileNumber',
+    userVerified: 'userVerified',
+    device: 'device',
+    form: 'form',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
 };

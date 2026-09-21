@@ -62,6 +62,9 @@ import modelDataRoutes from "./routes/pickup_routes/business/modeldata.route";
 import doorstepRoutes from "./routes/pickup_routes/business/doorstep-pickup.routes";
 import mselfDiagnoseRoutes from "./routes/pickup_routes/business/self-diagnose.route";
 
+
+import getModelsRoute from "./routes/tech-mobee_routes/models.route";
+
 import { connectDb } from "./lib/connectDb";
 const app = express();
 const allowedOrigins = Array.from(
@@ -73,7 +76,8 @@ const allowedOrigins = Array.from(
     "https://techmobee.vercel.app",
     "https://mobitech-crm.in",
     "http://192.168.29.161:3000",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "*"
   ]),
 );
 const corsOptions: CorsOptions = {
@@ -166,8 +170,11 @@ app.use(`/api/v3/utils`, utilRoutes);
 
 // For Tech Mobee
 
-app.use(`/api/v3/enquire`, sendOtpForPickupRoute);
-app.use(`/api/v3/enquire`, verifyOtpForPickupRoute);
+app.use(`/api/v4/tmb`, sendOtpForPickupRoute);
+app.use(`/api/v4/tmb`, verifyOtpForPickupRoute);
+
+
+app.use(`/api/v4/tmb`, getModelsRoute);
 app.post("/api/v1/get-diagnostics-data", (req, res) => {
   try {
     const body = req.body;

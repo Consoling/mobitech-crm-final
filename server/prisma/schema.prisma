@@ -436,7 +436,7 @@ model DoorstepPickup {
   imei1                   String?
   imei2                   String?
   mbdgReport              Json?
-  isModelMismatchDetected          Boolean?
+  isModelMismatchDetected Boolean?
   diagnosticsProcess      String?
   deviceFrontImage        String?
   deviceBackImage         String?
@@ -447,7 +447,7 @@ model DoorstepPickup {
   qcReportInit            String?
   qcReport                String?
   repairRequired          String?
-  deviceIssues           String?
+  deviceIssues            String?
   repairStatus            String?
   accessories             String?
   deviceAge               String?
@@ -662,7 +662,7 @@ model SelfDiagnoseData {
   deviceType               String?
   brand                    String?
   smc                      String?
-  selectedSDModel             Json?
+  selectedSDModel          Json?
   variant                  String?
   imei1                    String?
   imei2                    String?
@@ -697,4 +697,23 @@ model SelfDiagnoseData {
   updatedAt                DateTime @updatedAt
 
   user User? @relation(fields: [employeeId], references: [id])
+}
+
+model LeadData {
+  id String @id @default(cuid())
+
+  sessionId    String  @unique
+  name         String
+  address      String
+  mobileNumber String
+  userVerified Boolean @default(false)
+
+  device Json
+  form   Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([mobileNumber])
+  @@index([createdAt])
 }
