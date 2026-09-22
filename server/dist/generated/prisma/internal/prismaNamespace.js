@@ -575,10 +575,12 @@ exports.CustomersScalarFieldEnum = {
     firstName: 'firstName',
     lastName: 'lastName',
     phone: 'phone',
+    isVerified: 'isVerified',
     email: 'email',
     address: 'address',
     createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    updatedAt: 'updatedAt',
+    leadDataId: 'leadDataId'
 };
 exports.PartiesScalarFieldEnum = {
     id: 'id',
@@ -677,6 +679,7 @@ exports.LeadDataScalarFieldEnum = {
     userVerified: 'userVerified',
     device: 'device',
     form: 'form',
+    customerId: 'customerId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
 };

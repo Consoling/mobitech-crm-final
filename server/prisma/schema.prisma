@@ -580,15 +580,19 @@ enum Role {
 }
 
 model Customers {
-  id        String      @id @default(cuid())
-  firstName String
-  lastName  String?
-  phone     String      @unique
-  email     String?     @unique
-  address   Json?
-  purchases Purchases[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id         String      @id @default(cuid())
+  firstName  String
+  lastName   String?
+  phone      String      @unique
+  isVerified Boolean     @default(false)
+  email      String?     @unique
+  address    Json?
+  purchases  Purchases[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  leadDataId String? @unique
+  leadData      LeadData[]
 }
 
 model Parties {
@@ -708,12 +712,14 @@ model LeadData {
   mobileNumber String
   userVerified Boolean @default(false)
 
-  device Json
-  form   Json
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  device    Json
+  form      Json
+   customerId String?
+  customer   Customers? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   @@index([mobileNumber])
+    @@index([customerId])
   @@index([createdAt])
 }

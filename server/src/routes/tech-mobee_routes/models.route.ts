@@ -177,33 +177,48 @@ router.post(`/mbt-ld`, async (req: Request, res: Response) => {
       });
     }
 
-    // Create or update lead
-    const lead = await prisma.leadData.upsert({
+// 1. Find existing customer or create a new one
+    const customer = await prisma.customers.upsert({
       where: {
-        sessionId,
+        phone,
       },
-
       create: {
-        sessionId,
-        mobileNumber: phone,
-        userVerified,
-        name,
-        address,
-        device,
-        form: form ?? {},
+        firstName: name,
+        phone,
+        isVerified: userVerified,
+        address: {
+          value: address,
+        },
       },
-
       update: {
+        isVerified: userVerified,
+        address: {
+          value: address,
+        },
+      },
+    });
+
+
+
+  
+
+    // Create or update lead
+      const lead = await prisma.leadData.create({
+      data: {
+        sessionId,
+        name,
         mobileNumber: phone,
+        address,
         userVerified,
         device,
         form: form ?? {},
+        customerId: customer.id,
       },
     });
 
     return res.status(200).json({
       result: "success",
-      message: "Lead data uploaded successfully",
+      message: "Lead submitted successfully",
       data: {
         id: lead.id,
         sessionId: lead.sessionId,
