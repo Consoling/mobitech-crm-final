@@ -37,6 +37,8 @@ import AddParty from "./pages/parties/AddParty";
 import ViewParty from "./pages/parties/ViewParties";
 import ManageParty from "./pages/parties/ManageParties";
 import OrphanModels from "./pages/OrphanModels";
+import ViewLeads from "./pages/leads/ViewLeads";
+import ViewLead from "./pages/leads/ViewLead";
 
 
 const App = () => {
@@ -89,6 +91,8 @@ const App = () => {
           <Route path='/clients/add-party' element={<AddParty />} />
           <Route path='/clients/view-party/:partyId' element={<ViewParty />} />
           <Route path='/clients/edit-party/:partyId' element={<ManageParty />} />
+          <Route path='/clients/leads' element={<ViewLeads />} />
+          <Route path='/clients/leads/:id' element={<ViewLead />} />
 
           {/* Add your protected routes here */}
           {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}

@@ -83,6 +83,7 @@ const menuItems: MenuItem[] = [
     label: "Clients",
     icon: CircleUser,
     subItems: [
+      { label: "Leads", path: "/clients/leads" },
       { label: "Parties", path: "/clients/parties" },
       { label: "Customers", path: "/clients/customers" },
     ],

@@ -37,6 +37,7 @@ const fetch_user_data_route_1 = __importDefault(require("./routes/pickup_app_rou
 const parties_route_1 = __importDefault(require("./routes/parties.route"));
 const upload_data_route_1 = __importDefault(require("./routes/pickup_app_routes/self-diagnostics/upload-data.route"));
 const get_data_route_1 = __importDefault(require("./routes/pickup_app_routes/self-diagnostics/get-data.route"));
+const lead_route_1 = __importDefault(require("./routes/lead.route"));
 const generate_declaration_route_1 = __importDefault(require("./routes/pickup_app_routes/declaration/generate-declaration.route"));
 const get_declaration_route_1 = __importDefault(require("./routes/pickup_app_routes/declaration/get-declaration.route"));
 const accept_declaration_route_1 = __importDefault(require("./routes/pickup_app_routes/declaration/accept-declaration.route"));
@@ -107,6 +108,7 @@ app.use("/api/v1/customers", customer_route_1.default);
 app.use("/api/v1/parties", parties_route_1.default);
 app.use("/api/v2/device-data", device_data_route_1.default);
 app.use("/api/v1/util", util_routes_1.default);
+app.use("/api/v1/leads", lead_route_1.default);
 app.use(`/api/v1/diagnose`, auth_route_2.default);
 app.use(`/api/v1/diagnose`, mfa_route_2.default);
 app.use(`/api/v1/diagnose`, verify_selfie_route_1.default);

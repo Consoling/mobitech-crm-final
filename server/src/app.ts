@@ -34,6 +34,8 @@ import partiesRoutes from "./routes/parties.route";
 import uploadManualDiagnosticsDataRoute from "./routes/pickup_app_routes/self-diagnostics/upload-data.route";
 import fetchManualDiagnosticsDataRoute from "./routes/pickup_app_routes/self-diagnostics/get-data.route";
 
+import leadRoutes from "./routes/lead.route";
+
 import generateDeclarationRoute from "./routes/pickup_app_routes/declaration/generate-declaration.route";
 import getDeclarationRoute from "./routes/pickup_app_routes/declaration/get-declaration.route";
 import acceptDeclarationRoute from "./routes/pickup_app_routes/declaration/accept-declaration.route";
@@ -121,6 +123,7 @@ app.use("/api/v1/customers", customerRoutes);
 app.use("/api/v1/parties", partiesRoutes);
 app.use("/api/v2/device-data", deviceDataRoute);
 app.use("/api/v1/util", utilRoutes);
+app.use("/api/v1/leads", leadRoutes);
 
 app.use(`/api/v1/diagnose`, diagnoseAuthRoutes);
 app.use(`/api/v1/diagnose`, mfaDiagnoseRoutes);
