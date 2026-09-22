@@ -1,6 +1,8 @@
 import express, { Request, Response } from "express";
 import Device from "../../models/Device";
 import { prisma } from "../../config/prisma";
+import { SYS_ENV } from "../../utils/env";
+import { sendErrorLogEvent } from "../../utils/errorLogger";
 
 const router = express.Router();
 
@@ -177,7 +179,7 @@ router.post(`/mbt-ld`, async (req: Request, res: Response) => {
       });
     }
 
-// 1. Find existing customer or create a new one
+    // 1. Find existing customer or create a new one
     const customer = await prisma.customers.upsert({
       where: {
         phone,
@@ -198,12 +200,8 @@ router.post(`/mbt-ld`, async (req: Request, res: Response) => {
       },
     });
 
-
-
-  
-
     // Create or update lead
-      const lead = await prisma.leadData.create({
+    const lead = await prisma.leadData.create({
       data: {
         sessionId,
         name,
@@ -216,6 +214,62 @@ router.post(`/mbt-ld`, async (req: Request, res: Response) => {
       },
     });
 
+    const extractLast7Characters = (leadID: string) => {
+      return leadID.replace(/-/g, "").slice(-7);
+    };
+
+    const var1 = customer?.firstName || "Dear Customer";
+
+    const var2 = (lead.device as { name?: string; variant?: string })?.name
+  ? `${(lead.device as { name?: string; variant?: string }).name}${
+      (lead.device as { name?: string; variant?: string }).variant
+        ? ` (${(lead.device as { name?: string; variant?: string }).variant})`
+        : ""
+    }`
+  : "your device";
+
+    const var3 = `MTL-${extractLast7Characters(lead.id).toUpperCase()}`;
+
+    const var4 = `${new Date(lead.createdAt).toLocaleDateString("en-US", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })}`;
+
+    const var5 = "https://techmobee.in/orders";
+
+    const var6 = "+919113717019";
+
+    const mobileNumber = lead.mobileNumber || "";
+
+    const whatsappUrl =
+      `https://www.fast2sms.com/dev/whatsapp?` +
+      `authorization=${encodeURIComponent(SYS_ENV.FAST2SMS_API_KEY || "")}` +
+      `&message_id=32609` +
+      `&phone_number_id=675308412343038` +
+      `&numbers=${encodeURIComponent(mobileNumber)}` +
+      `&variables_values=${encodeURIComponent(
+        `${var1}|${var2}|${var3}|${var4}|${var5}|${var6}`,
+      )}`;
+
+    let apiRes;
+
+    try {
+      apiRes = await fetch(whatsappUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          authorization: SYS_ENV.FAST2SMS_API_KEY || "",
+        },
+      });
+    } catch (error: any) {
+      sendErrorLogEvent(
+        "ERR_EVENT_001",
+        "Failed to send WhatsApp confirmation:",
+        error,
+      );
+    }
     return res.status(200).json({
       result: "success",
       message: "Lead submitted successfully",
